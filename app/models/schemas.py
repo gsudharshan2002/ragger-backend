@@ -141,12 +141,14 @@ class UploadedDocument(BaseSchema):
     path: Optional[str] = None
     uploaded_at: datetime = Field(default_factory=datetime.utcnow)
     knowledge_base_id: Optional[str] = None
+    folder_id: Optional[str] = None
 
 
 class KnowledgeBase(BaseSchema):
     id: str = Field(default_factory=lambda: str(uuid4()))
     name: str
     description: str = ""
+    tags: list[str] = Field(default_factory=list)
     document_count: int = 0
     chunk_count: int = 0
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -159,6 +161,12 @@ class BenchmarkCase(BaseSchema):
     context: Optional[str] = None
     difficulty: Optional[str] = None
     tags: list[str] = Field(default_factory=list)
+    expected_sources: list[dict[str, Any]] = Field(default_factory=list)
+    expected_section: Optional[str] = None
+    expected_pages: list[int] = Field(default_factory=list)
+    why_difficult: str = ""
+    status: str = "not_run"
+    advanced: dict[str, Any] = Field(default_factory=dict)
 
 
 class DocumentVersion(BaseSchema):
@@ -177,6 +185,9 @@ class Dataset(BaseSchema):
     current_version: str = "v1"
     versions: list[DocumentVersion] = Field(default_factory=list)
     knowledge_base_id: Optional[str] = None
+    tags: list[str] = Field(default_factory=list)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class EvaluationMetrics(BaseSchema):
@@ -250,6 +261,7 @@ class FullTrace(BaseSchema):
     query: str
     strategy: RagStrategy
     config: RagEngineConfig
+    events: list[dict[str, Any]] = Field(default_factory=list)
     query_processing: dict[str, Any]
     context: dict[str, Any]
     prompt: dict[str, Any]

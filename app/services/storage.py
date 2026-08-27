@@ -158,7 +158,13 @@ async def delete_chunks_for_document(doc_id: str) -> int:
 
 async def delete_document(doc_id: str) -> bool:
     await init_storage()
-    if doc_id in _documents_cache:
+    document = _documents_cache.get(doc_id)
+    if document:
+        if document.path and os.path.exists(document.path):
+            try:
+                os.remove(document.path)
+            except OSError as exc:
+                logger.warning(f"Failed to remove document file {document.path}: {exc}")
         del _documents_cache[doc_id]
         await _save_documents()
         # Also remove chunks
@@ -194,9 +200,31 @@ async def add_knowledge_base(kb: KnowledgeBase) -> KnowledgeBase:
     return kb
 
 
+async def update_knowledge_base(kb_id: str, updates: dict) -> Optional[KnowledgeBase]:
+    await init_storage()
+    kb = _kb_cache.get(kb_id)
+    if not kb:
+        return None
+    if "name" in updates:
+        kb.name = updates["name"]
+    if "description" in updates:
+        kb.description = updates["description"]
+    if "tags" in updates:
+        kb.tags = updates["tags"]
+    await _save_kbs()
+    return kb
+
+
 async def delete_knowledge_base(kb_id: str) -> bool:
     await init_storage()
     if kb_id in _kb_cache:
+        documents = [d.id for d in _documents_cache.values() if d.knowledge_base_id == kb_id]
+        for document_id in documents:
+            await delete_document(document_id)
+        await _load_folders()
+        global _folders_cache
+        _folders_cache = [f for f in _folders_cache if f.get("knowledgeBaseId") != kb_id]
+        await _save_folders()
         del _kb_cache[kb_id]
         await _save_kbs()
         return True
@@ -264,7 +292,8 @@ async def get_settings() -> dict:
         "geminiApiKey": settings.GEMINI_API_KEY,
         "embeddingProvider": settings.EMBEDDING_PROVIDER,
         "embeddingModel": settings.EMBEDDING_MODEL,
-        "embeddingApiKey": settings.EMBEDDING_API_KEY,
+        "vectorSimilarity": settings.VECTOR_SIMILARITY,
+        "embeddingApiKey": None,
         "chunkSize": settings.CHUNK_SIZE,
         "chunkOverlap": settings.CHUNK_OVERLAP,
         "defaultTopK": settings.DEFAULT_TOP_K,

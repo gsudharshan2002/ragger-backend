@@ -38,6 +38,7 @@ def _document_response(doc: "object") -> dict:
         "updatedAt": uploaded,
         "uploadedAt": uploaded,
         "knowledgeBaseId": doc.knowledge_base_id,
+        "folderId": doc.folder_id,
     }
 
 

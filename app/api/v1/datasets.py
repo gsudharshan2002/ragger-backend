@@ -17,6 +17,7 @@ router = APIRouter()
 class DatasetCreate(BaseModel):
     name: str
     description: str = ""
+    tags: list[str] = []
 
 
 def _dataset_response(ds) -> dict:
@@ -48,6 +49,7 @@ async def create_dataset(payload: DatasetCreate) -> dict:
         id=str(uuid4()),
         name=payload.name,
         description=payload.description,
+        tags=payload.tags,
         current_version="v1",
         versions=[DocumentVersion(version="v1", cases_count=0)],
     )

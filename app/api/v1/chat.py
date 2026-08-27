@@ -1,5 +1,4 @@
 import json
-from datetime import datetime, timezone
 from typing import AsyncGenerator
 
 from fastapi import APIRouter
@@ -59,24 +58,38 @@ async def chat_send(request: ChatRequest):
         request.strategy,
         None,
         request.knowledge_base_id,
-        start_time=datetime.now(timezone.utc),
     ):
         if event.get("type") == "llm.token" and "content" in event:
             answer += event["content"]
 
         elif (
             event.get("stage") == "trace"
-            and event.get("event") == "trace.completed"
+            and (
+                event.get("type") == "trace.completed"
+                or event.get("event") == "trace.completed"
+            )
         ):
             trace = event["data"]
             answer = trace.get("llm", {}).get("answer", answer)
             sources = trace.get("sources", [])
+
+        elif event.get("type") == "trace.failed" or event.get("event") == "trace.failed":
+            return {
+                "success": False,
+                "error": event.get("data", {}).get("error", "RAG pipeline failed"),
+            }
 
         elif event.get("type") == "error":
             return {
                 "success": False,
                 "error": event.get("error", "Unknown error"),
             }
+
+    if trace is None:
+        return {
+            "success": False,
+            "error": "RAG pipeline failed before producing a trace",
+        }
 
     return ChatResponse(
         answer=answer,

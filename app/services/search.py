@@ -1,25 +1,28 @@
 import math
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
 
 from app.models.schemas import StoredChunk
 import asyncio
-from sentence_transformers import CrossEncoder
 from app.core.logging_config import get_logger
 logger = get_logger(__name__)
 
-_CROSS_ENCODER_MODEL_NAME = "cross-encoder/ms-marco-MiniLM-L-6-v2"
-_cross_encoder: Optional[CrossEncoder] = None
+if TYPE_CHECKING:
+    from sentence_transformers import CrossEncoder
 
-def _get_cross_encoder() -> CrossEncoder:
-    global _cross_encoder
-    if _cross_encoder is None:
-        _cross_encoder = CrossEncoder(_CROSS_ENCODER_MODEL_NAME)
+_cross_encoder: Optional[Any] = None
+_cross_encoder_model_name: Optional[str] = None
+
+def _get_cross_encoder(model_name: str) -> Any:
+    global _cross_encoder, _cross_encoder_model_name
+    if _cross_encoder is None or _cross_encoder_model_name != model_name:
+        from sentence_transformers import CrossEncoder
+
+        _cross_encoder = CrossEncoder(model_name)
+        _cross_encoder_model_name = model_name
     return _cross_encoder
-
-from sentence_transformers import CrossEncoder
 
 
 @dataclass
@@ -119,7 +122,12 @@ def vector_search(
         else:
             score = cosine_similarity(query_embedding, chunk.embedding)
 
-        if score >= similarity_threshold:
+        passes_threshold = (
+            score <= similarity_threshold
+            if similarity == "l2"
+            else score >= similarity_threshold
+        )
+        if passes_threshold:
             scored.append(
                 VectorResult(
                     chunk=chunk,
@@ -261,29 +269,21 @@ async def rerank_documents(
     candidate_count: int = 20,
     top_n: int = 10,
 ) -> list[RerankResult]:
-    # Simple cross-encoder simulation using BM25 + vector score blending
-    # In production, this would call a real reranker API
-    from app.services.embeddings import generate_query_embedding
-
-    query_embedding = await generate_query_embedding(query)
     candidates = chunks[:candidate_count] if len(chunks) > candidate_count else chunks
+    if not candidates:
+        return []
+
+    cross_encoder = _get_cross_encoder(model or "cross-encoder/ms-marco-MiniLM-L-6-v2")
+    pairs = [(query, chunk.content) for chunk in candidates]
+    scores = await asyncio.to_thread(cross_encoder.predict, pairs)
 
     scored: list[RerankResult] = []
-    for chunk in candidates:
-        score = 0.0
-        if query_embedding and chunk.embedding:
-            score += cosine_similarity(query_embedding, chunk.embedding) * 0.5
-        # Add lexical overlap
-        query_tokens = set(_tokenize(query))
-        doc_tokens = set(_tokenize(chunk.content))
-        overlap = len(query_tokens & doc_tokens) / max(len(query_tokens), 1)
-        score += overlap * 0.5
-
+    for chunk, score in zip(candidates, scores):
         scored.append(
             RerankResult(
                 chunk=chunk,
                 chunk_id=chunk.id,
-                rerank_score=score,
+                rerank_score=float(score),
                 method="reranker",
             )
         )

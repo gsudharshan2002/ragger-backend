@@ -89,6 +89,11 @@ async def rechunk_document_endpoint(doc_id: str) -> dict:
     return await _rerun(doc_id, "chunk")
 
 
+@router.post("/{doc_id}/reindex")
+async def reindex_document_endpoint(doc_id: str) -> dict:
+    return await _rerun(doc_id, "index")
+
+
 @router.get("/{doc_id}/preview")
 async def preview_document(doc_id: str, range: str = Query(None)) -> Response:
     doc = await get_document(doc_id)

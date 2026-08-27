@@ -103,30 +103,81 @@ async def run_benchmark(payload: BenchmarkRunRequest) -> dict:
 
     started_at = datetime.now(timezone.utc).isoformat()
     case_results = []
+    empty_metrics = {
+        "hitRate": 0,
+        "recall": 0,
+        "precision": 0,
+        "mrr": 0,
+        "ndcg": 0,
+        "faithfulness": 0,
+        "answerRelevance": 0,
+        "contextPrecision": 0,
+        "contextRecall": 0,
+        "latencyMs": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "totalTokens": 0,
+        "cost": 0,
+    }
 
     for test_case in getattr(current_version, "cases", []):
         case_started = datetime.now(timezone.utc)
         try:
             answer = ""
+            trace = None
             async for event in execute_rag(
                 test_case.query, strategy, payload.ragConfig, None
             ):
                 if event.get("type") == "llm.token" and "content" in event:
                     answer += event["content"]
+                if event.get("type") == "trace.completed":
+                    trace = event.get("data")
+            actual_sources = []
+            if trace:
+                actual_sources = [
+                    {
+                        "document": source.get("document_name", ""),
+                        "page": source.get("page", 0),
+                        "section": source.get("section", ""),
+                        "chunkId": source.get("chunk_id", ""),
+                        "score": source.get("score", 0),
+                    }
+                    for source in trace.get("sources", [])
+                ]
             case_results.append({
                 "caseId": test_case.id,
+                "status": "passed",
                 "query": test_case.query,
                 "actualAnswer": answer,
+                "actualSources": actual_sources,
+                "metrics": {**empty_metrics},
+                "failureCategories": [],
+                "failureExplanation": "",
                 "latencyMs": int((datetime.now(timezone.utc) - case_started).total_seconds() * 1000),
+                "durationMs": int((datetime.now(timezone.utc) - case_started).total_seconds() * 1000),
                 "tokenCount": 0,
+                "actualPages": sorted({source["page"] for source in actual_sources}),
+                "traceId": trace.get("id", "") if trace else "",
+                "runId": "",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             })
         except Exception as e:
             case_results.append({
                 "caseId": getattr(test_case, "id", "unknown"),
+                "status": "failed",
                 "query": getattr(test_case, "query", ""),
                 "actualAnswer": "",
+                "actualSources": [],
+                "metrics": {**empty_metrics},
+                "failureCategories": ["retrieval_failure"],
+                "failureExplanation": str(e),
                 "latencyMs": int((datetime.now(timezone.utc) - case_started).total_seconds() * 1000),
+                "durationMs": int((datetime.now(timezone.utc) - case_started).total_seconds() * 1000),
                 "tokenCount": 0,
+                "actualPages": [],
+                "traceId": "",
+                "runId": "",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "error": str(e),
             })
 
@@ -137,6 +188,18 @@ async def run_benchmark(payload: BenchmarkRunRequest) -> dict:
         "startedAt": started_at,
         "completedAt": datetime.now(timezone.utc).isoformat(),
         "totalTests": len(getattr(current_version, "cases", [])),
+        "completedTests": len(case_results),
+        "passedTests": 0,
+        "partialTests": 0,
+        "failedTests": sum(1 for result in case_results if result["status"] == "failed"),
+        "status": "completed",
+        "datasetName": dataset.name,
+        "datasetVersion": dataset.current_version,
+        "config": payload.ragConfig or {},
+        "aggregateMetrics": {**empty_metrics},
+        "difficultyBreakdown": {},
+        "tagBreakdown": {},
+        "failureCategories": {},
         "results": case_results,
     }
     await add_benchmark_result(result)

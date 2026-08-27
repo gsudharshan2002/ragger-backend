@@ -13,33 +13,43 @@ FastAPI backend for the RAG (Retrieval-Augmented Generation) application. This r
 
 ## Setup
 
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/) first. `uv` manages the Python version, virtual environment, and dependencies for this project.
+
 ```bash
 cd ragger-backend
-python -m venv venv
-source venv/bin/activate  # or: venv\Scripts\activate on Windows
-pip install -e ".[dev]"
+uv sync --extra dev
 cp .env.example .env  # Edit with your API keys
-uvicorn app.main:app --reload --port 8000
+uv run uvicorn app.main:app --reload --port 8000
+```
+
+On Windows PowerShell, use `Copy-Item .env.example .env` instead of `cp`.
+
+Run the test suite and quality checks with:
+
+```bash
+uv run pytest -q
+uv run ruff check .
+uv run mypy app
 ```
 
 ## API Endpoints
 
 All endpoints are under `/api/v1`:
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/health` | Health check |
-| POST | `/chat/stream` | SSE stream of RAG pipeline events |
-| POST | `/chat/send` | Non-streaming chat response |
-| GET | `/documents` | List documents |
-| POST | `/documents/upload` | Upload and process document |
-| DELETE | `/documents/{id}` | Delete document |
-| GET | `/knowledge-bases` | List knowledge bases |
-| POST | `/knowledge-bases` | Create knowledge base |
-| GET | `/datasets` | List datasets |
-| POST | `/datasets` | Create dataset |
-| POST | `/benchmark/start` | Start benchmark run |
-| GET | `/benchmark/runs` | List benchmark runs |
+| Method | Endpoint            | Description                       |
+| ------ | ------------------- | --------------------------------- |
+| GET    | `/health`           | Health check                      |
+| POST   | `/chat/stream`      | SSE stream of RAG pipeline events |
+| POST   | `/chat/send`        | Non-streaming chat response       |
+| GET    | `/documents`        | List documents                    |
+| POST   | `/documents/upload` | Upload and process document       |
+| DELETE | `/documents/{id}`   | Delete document                   |
+| GET    | `/knowledge-bases`  | List knowledge bases              |
+| POST   | `/knowledge-bases`  | Create knowledge base             |
+| GET    | `/datasets`         | List datasets                     |
+| POST   | `/datasets`         | Create dataset                    |
+| POST   | `/benchmark/start`  | Start benchmark run               |
+| GET    | `/benchmark/runs`   | List benchmark runs               |
 
 ## Configuration
 
@@ -65,6 +75,8 @@ Or with docker-compose (from repo root):
 ```bash
 docker-compose up
 ```
+
+The Docker image uses `uv sync --locked` and does not require a host Python installation.
 
 ## API Compatibility
 

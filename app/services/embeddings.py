@@ -1,22 +1,25 @@
 import asyncio
-from typing import Optional, List
-from sentence_transformers import SentenceTransformer
+from typing import TYPE_CHECKING, Any, Optional, List
 
 from app.core.config import settings
 from app.core.logging_config import get_logger
 
 logger = get_logger(__name__)
 
-_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
-_model: Optional[SentenceTransformer] = None
+if TYPE_CHECKING:
+    from sentence_transformers import SentenceTransformer
+
+_model: Optional[Any] = None
 
 
-def _get_model() -> SentenceTransformer:
+def _get_model(model_name: str) -> Any:
     global _model
     if _model is None:
         try:
-            _model = SentenceTransformer(_MODEL_NAME)
-            logger.info(f"Loaded embedding model: {_MODEL_NAME}")
+            from sentence_transformers import SentenceTransformer
+
+            _model = SentenceTransformer(model_name)
+            logger.info(f"Loaded local embedding model: {model_name}")
         except Exception as e:
             logger.error(f"Failed to load embedding model: {e}")
             raise
@@ -38,7 +41,12 @@ async def get_embeddings_for_texts(texts: List[str]) -> Optional[List[List[float
         return None
 
     try:
-        model = _get_model()
+        from app.services.storage import get_settings
+
+        persisted = await get_settings()
+        model_name = persisted.get("embeddingModel") or settings.EMBEDDING_MODEL
+
+        model = _get_model(model_name)
         # Use batch size from settings, but ensure at least 1
         batch_size = max(1, settings.EMBEDDING_BATCH_SIZE)
         all_embeddings: List[List[float]] = []

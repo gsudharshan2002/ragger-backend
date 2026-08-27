@@ -13,6 +13,7 @@ from app.services.storage import (
     update_document,
     delete_chunks_for_document,
     get_data_dir,
+    get_settings,
 )
 
 logger = get_logger(__name__)
@@ -49,7 +50,7 @@ def _chunk_text(text: str, chunk_size: int = 512, overlap: int = 64) -> list[str
     return chunks
 
 
-async def process_pdf(file_path: str, file_name: str, knowledge_base_id: Optional[str] = None) -> UploadedDocument:
+async def process_pdf(file_path: str, file_name: str, knowledge_base_id: Optional[str] = None, folder_id: Optional[str] = None) -> UploadedDocument:
     """Process a PDF file: extract text, chunk, embed, store."""
     from pypdf import PdfReader
 
@@ -61,14 +62,14 @@ async def process_pdf(file_path: str, file_name: str, knowledge_base_id: Optiona
 
     total_text = "\n".join(pages_text)
     return await _process_document_text(
-        total_text, file_name, len(reader.pages), knowledge_base_id, "application/pdf", file_path
+        total_text, file_name, len(reader.pages), knowledge_base_id, "application/pdf", file_path, folder_id=folder_id
     )
 
 
-async def process_text_file(file_path: str, file_name: str, knowledge_base_id: Optional[str] = None) -> UploadedDocument:
+async def process_text_file(file_path: str, file_name: str, knowledge_base_id: Optional[str] = None, folder_id: Optional[str] = None) -> UploadedDocument:
     with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
         text = f.read()
-    return await _process_document_text(text, file_name, 1, knowledge_base_id, "text/plain", file_path)
+    return await _process_document_text(text, file_name, 1, knowledge_base_id, "text/plain", file_path, folder_id=folder_id)
 
 
 async def _process_document_text(
@@ -79,9 +80,13 @@ async def _process_document_text(
     file_type: str = "text/plain",
     original_path: Optional[str] = None,
     doc_id: Optional[str] = None,
+    folder_id: Optional[str] = None,
 ) -> UploadedDocument:
     doc_id = doc_id or str(uuid.uuid4())
-    chunk_texts = _chunk_text(text, settings.CHUNK_SIZE, settings.CHUNK_OVERLAP)
+    persisted = await get_settings()
+    chunk_size = int(persisted.get("chunkSize", settings.CHUNK_SIZE) or settings.CHUNK_SIZE)
+    chunk_overlap = int(persisted.get("chunkOverlap", settings.CHUNK_OVERLAP) or settings.CHUNK_OVERLAP)
+    chunk_texts = _chunk_text(text, chunk_size, chunk_overlap)
 
     # Create chunks
     chunks: list[StoredChunk] = []
@@ -100,11 +105,10 @@ async def _process_document_text(
         )
 
     # Generate embeddings
-    if settings.EMBEDDING_PROVIDER != "none":
-        embeddings = await get_embeddings_for_texts(chunk_texts)
-        if embeddings:
-            for chunk, emb in zip(chunks, embeddings):
-                chunk.embedding = emb
+    embeddings = await get_embeddings_for_texts(chunk_texts)
+    if embeddings:
+        for chunk, emb in zip(chunks, embeddings):
+            chunk.embedding = emb
 
     # Store
     await add_chunks(chunks)
@@ -119,6 +123,7 @@ async def _process_document_text(
         token_count=sum(c.token_count for c in chunks),
         path=original_path,
         knowledge_base_id=knowledge_base_id,
+        folder_id=folder_id,
     )
     await add_document(doc)
 
@@ -131,6 +136,7 @@ async def reprocess_document(
     file_path: str,
     file_name: str,
     knowledge_base_id: Optional[str] = None,
+    folder_id: Optional[str] = None,
 ) -> UploadedDocument:
     """Re-extract, re-chunk, re-embed and replace an existing document's content."""
     if file_path.lower().endswith(".pdf"):
@@ -152,7 +158,7 @@ async def reprocess_document(
 
     # Rebuild with the same document id
     doc = await _process_document_text(
-        total_text, file_name, pages, knowledge_base_id, file_type, file_path, doc_id=doc_id
+        total_text, file_name, pages, knowledge_base_id, file_type, file_path, doc_id=doc_id, folder_id=folder_id
     )
     await update_document(doc)
     logger.info(f"Reprocessed document {file_name}: {doc.chunks} chunks")

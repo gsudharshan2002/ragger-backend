@@ -14,6 +14,7 @@ class SettingsUpdate(BaseModel):
     geminiApiKey: Optional[str] = None
     embeddingProvider: Optional[str] = None
     embeddingModel: Optional[str] = None
+    vectorSimilarity: Optional[str] = None
     embeddingApiKey: Optional[str] = None
     chunkSize: Optional[int] = None
     chunkOverlap: Optional[int] = None
