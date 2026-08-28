@@ -1,3 +1,5 @@
+import math
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
@@ -10,6 +12,101 @@ router = APIRouter()
 
 # In-memory store for benchmark runs
 _benchmark_runs: dict[str, BenchmarkRun] = {}
+
+_ALL_METRIC_KEYS = [
+    "hitRate", "recall", "precision", "mrr", "ndcg",
+    "faithfulness", "answerRelevance", "contextPrecision", "contextRecall",
+]
+
+_ALL_FAILURE_CATEGORIES = [
+    "retrieval_failure", "missing_source", "wrong_source", "poor_ranking",
+    "poor_context", "poor_answer", "citation_failure", "latency_failure",
+    "token_limit_failure",
+]
+
+
+_DOC_EXTENSIONS = (".pdf", ".md", ".txt", ".docx", ".doc")
+
+
+def _source_keys(source: dict) -> set[str]:
+    """Identify a source by every signal available: chunk id (when it
+    actually corresponds to this backend's own ids) and normalized
+    document+page. Golden datasets are often authored independently of any
+    particular backend and carry synthetic/placeholder chunk ids (e.g.
+    "P1-C1") that will never match real generated ids, and document names
+    may or may not include the file extension - so a source counts as the
+    same source if ANY identity signal overlaps, not just chunk id."""
+    keys: set[str] = set()
+    chunk_id = source.get("chunkId") or source.get("chunk_id")
+    if chunk_id:
+        keys.add(f"chunk:{chunk_id}")
+    document = str(source.get("document") or "").strip().lower()
+    for ext in _DOC_EXTENSIONS:
+        if document.endswith(ext):
+            document = document[: -len(ext)]
+            break
+    page = source.get("page")
+    if document:
+        keys.add(f"doc:{document}|{page}")
+    return keys
+
+
+def _is_match(a: set[str], b: set[str]) -> bool:
+    return bool(a & b)
+
+
+def _hit_rate(retrieved: list[set[str]], expected: list[set[str]]) -> float:
+    if not expected:
+        return 0.0
+    return 1.0 if any(_is_match(r, e) for r in retrieved for e in expected) else 0.0
+
+
+def _recall(retrieved: list[set[str]], expected: list[set[str]]) -> float:
+    if not expected:
+        return 0.0
+    matched = sum(1 for e in expected if any(_is_match(r, e) for r in retrieved))
+    return matched / len(expected)
+
+
+def _precision(retrieved: list[set[str]], expected: list[set[str]]) -> float:
+    if not retrieved:
+        return 0.0
+    matched = sum(1 for r in retrieved if any(_is_match(r, e) for e in expected))
+    return matched / len(retrieved)
+
+
+def _mrr(retrieved: list[set[str]], expected: list[set[str]]) -> float:
+    for i, r in enumerate(retrieved):
+        if any(_is_match(r, e) for e in expected):
+            return 1.0 / (i + 1)
+    return 0.0
+
+
+def _ndcg(retrieved: list[set[str]], expected: list[set[str]], k: int = 10) -> float:
+    if not expected or not retrieved:
+        return 0.0
+
+    def dcg(items: list[set[str]]) -> float:
+        score = 0.0
+        for i, item in enumerate(items[:k]):
+            rel = 1 if any(_is_match(item, e) for e in expected) else 0
+            score += (2 ** rel - 1) / math.log2(i + 2)
+        return score
+
+    ideal_count = min(len(expected), k)
+    idcg = sum((2 ** 1 - 1) / math.log2(i + 2) for i in range(ideal_count))
+    if idcg == 0:
+        return 0.0
+    return dcg(retrieved) / idcg
+
+
+def _average_metrics(metric_dicts: list[dict]) -> dict:
+    if not metric_dicts:
+        return {key: 0.0 for key in _ALL_METRIC_KEYS}
+    return {
+        key: sum(m.get(key, 0.0) for m in metric_dicts) / len(metric_dicts)
+        for key in _ALL_METRIC_KEYS
+    }
 
 
 class BenchmarkStartRequest(BaseModel):
@@ -120,6 +217,9 @@ async def run_benchmark(payload: BenchmarkRunRequest) -> dict:
         "cost": 0,
     }
 
+    by_difficulty: dict[str, list[dict]] = {}
+    by_tag: dict[str, list[dict]] = {}
+
     for test_case in getattr(current_version, "cases", []):
         case_started = datetime.now(timezone.utc)
         try:
@@ -144,15 +244,54 @@ async def run_benchmark(payload: BenchmarkRunRequest) -> dict:
                     }
                     for source in trace.get("sources", [])
                 ]
+
+            expected_sources = test_case.expected_sources or []
+            expected_keys = [_source_keys(s) for s in expected_sources]
+            retrieved_keys = [_source_keys(s) for s in actual_sources]
+
+            if not expected_keys:
+                status = "not_run"
+                failure_categories: list[str] = []
+                failure_explanation = ""
+                metrics = {**empty_metrics}
+            else:
+                metrics = {
+                    **empty_metrics,
+                    "hitRate": _hit_rate(retrieved_keys, expected_keys),
+                    "recall": _recall(retrieved_keys, expected_keys),
+                    "precision": _precision(retrieved_keys, expected_keys),
+                    "mrr": _mrr(retrieved_keys, expected_keys),
+                    "ndcg": _ndcg(retrieved_keys, expected_keys),
+                }
+                if metrics["hitRate"] == 0:
+                    status = "failed"
+                    failure_categories = ["missing_source"] if actual_sources else ["retrieval_failure"]
+                    failure_explanation = (
+                        "Retrieved sources did not include any expected source."
+                        if actual_sources else "No sources were retrieved."
+                    )
+                elif metrics["recall"] >= 0.999:
+                    status = "passed"
+                    failure_categories = []
+                    failure_explanation = ""
+                else:
+                    status = "partial"
+                    failure_categories = ["poor_ranking"]
+                    failure_explanation = "Some expected sources were not retrieved."
+
+                by_difficulty.setdefault(test_case.difficulty or "medium", []).append(metrics)
+                for tag in test_case.tags:
+                    by_tag.setdefault(tag, []).append(metrics)
+
             case_results.append({
                 "caseId": test_case.id,
-                "status": "passed",
+                "status": status,
                 "query": test_case.query,
                 "actualAnswer": answer,
                 "actualSources": actual_sources,
-                "metrics": {**empty_metrics},
-                "failureCategories": [],
-                "failureExplanation": "",
+                "metrics": metrics,
+                "failureCategories": failure_categories,
+                "failureExplanation": failure_explanation,
                 "latencyMs": int((datetime.now(timezone.utc) - case_started).total_seconds() * 1000),
                 "durationMs": int((datetime.now(timezone.utc) - case_started).total_seconds() * 1000),
                 "tokenCount": 0,
@@ -162,13 +301,14 @@ async def run_benchmark(payload: BenchmarkRunRequest) -> dict:
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             })
         except Exception as e:
+            metrics = {**empty_metrics}
             case_results.append({
                 "caseId": getattr(test_case, "id", "unknown"),
                 "status": "failed",
                 "query": getattr(test_case, "query", ""),
                 "actualAnswer": "",
                 "actualSources": [],
-                "metrics": {**empty_metrics},
+                "metrics": metrics,
                 "failureCategories": ["retrieval_failure"],
                 "failureExplanation": str(e),
                 "latencyMs": int((datetime.now(timezone.utc) - case_started).total_seconds() * 1000),
@@ -180,6 +320,21 @@ async def run_benchmark(payload: BenchmarkRunRequest) -> dict:
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "error": str(e),
             })
+            if getattr(test_case, "expected_sources", None):
+                by_difficulty.setdefault(getattr(test_case, "difficulty", None) or "medium", []).append(metrics)
+                for tag in getattr(test_case, "tags", []):
+                    by_tag.setdefault(tag, []).append(metrics)
+
+    evaluated_metrics = [r["metrics"] for r in case_results if r["status"] != "not_run"]
+    aggregate_metrics = _average_metrics(evaluated_metrics)
+    difficulty_breakdown = {level: _average_metrics(vals) for level, vals in by_difficulty.items()}
+    tag_breakdown = {tag: _average_metrics(vals) for tag, vals in by_tag.items()}
+
+    failure_categories_summary = {cat: 0 for cat in _ALL_FAILURE_CATEGORIES}
+    for r in case_results:
+        for cat in r["failureCategories"]:
+            if cat in failure_categories_summary:
+                failure_categories_summary[cat] += 1
 
     result = {
         "id": str(uuid4()),
@@ -189,17 +344,17 @@ async def run_benchmark(payload: BenchmarkRunRequest) -> dict:
         "completedAt": datetime.now(timezone.utc).isoformat(),
         "totalTests": len(getattr(current_version, "cases", [])),
         "completedTests": len(case_results),
-        "passedTests": 0,
-        "partialTests": 0,
-        "failedTests": sum(1 for result in case_results if result["status"] == "failed"),
+        "passedTests": sum(1 for r in case_results if r["status"] == "passed"),
+        "partialTests": sum(1 for r in case_results if r["status"] == "partial"),
+        "failedTests": sum(1 for r in case_results if r["status"] == "failed"),
         "status": "completed",
         "datasetName": dataset.name,
         "datasetVersion": dataset.current_version,
         "config": payload.ragConfig or {},
-        "aggregateMetrics": {**empty_metrics},
-        "difficultyBreakdown": {},
-        "tagBreakdown": {},
-        "failureCategories": {},
+        "aggregateMetrics": aggregate_metrics,
+        "difficultyBreakdown": difficulty_breakdown,
+        "tagBreakdown": tag_breakdown,
+        "failureCategories": failure_categories_summary,
         "results": case_results,
     }
     await add_benchmark_result(result)
