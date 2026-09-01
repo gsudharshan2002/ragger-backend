@@ -183,6 +183,22 @@ async def add_chunks(chunks: list[StoredChunk]) -> list[StoredChunk]:
     return chunks
 
 
+async def update_chunk_embeddings(embeddings_by_id: dict[str, list[float]]) -> int:
+    """Overwrite the stored embedding vector for existing chunks in place,
+    keyed by chunk id. Used to re-index chunks under a different embedding
+    provider without touching the source documents or chunk text."""
+    await init_storage()
+    updated = 0
+    for chunk in _chunks_cache:
+        new_embedding = embeddings_by_id.get(chunk.id)
+        if new_embedding is not None:
+            chunk.embedding = new_embedding
+            updated += 1
+    if updated:
+        await _save_chunks()
+    return updated
+
+
 async def get_all_knowledge_bases() -> list[KnowledgeBase]:
     await init_storage()
     return list(_kb_cache.values())
@@ -288,10 +304,12 @@ async def get_settings() -> dict:
     merged = {
         "llmProvider": settings.LLM_PROVIDER,
         "groqModel": settings.GROQ_MODEL,
+        "geminiModel": settings.GEMINI_MODEL,
         "groqApiKey": settings.GROQ_API_KEY,
         "geminiApiKey": settings.GEMINI_API_KEY,
         "embeddingProvider": settings.EMBEDDING_PROVIDER,
         "embeddingModel": settings.EMBEDDING_MODEL,
+        "cohereEmbedModel": settings.COHERE_EMBED_MODEL,
         "vectorSimilarity": settings.VECTOR_SIMILARITY,
         "embeddingApiKey": None,
         "chunkSize": settings.CHUNK_SIZE,
@@ -299,8 +317,11 @@ async def get_settings() -> dict:
         "defaultTopK": settings.DEFAULT_TOP_K,
         "defaultStrategy": settings.DEFAULT_STRATEGY,
         "systemPrompt": settings.SYSTEM_PROMPT,
+        "rerankerProvider": settings.RERANKER_PROVIDER,
         "rerankerModel": settings.RERANKER_MODEL,
+        "cohereRerankModel": settings.COHERE_RERANK_MODEL,
         "mmrLambda": settings.MMR_LAMBDA,
+        "costPerToken": settings.COST_PER_TOKEN,
     }
     merged.update(_settings_cache)
     return merged

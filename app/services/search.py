@@ -2,12 +2,17 @@ import math
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Optional
 
+import httpx
 import numpy as np
 
+from app.core.config import settings
+from app.core.retry import retry_on_rate_limit
 from app.models.schemas import StoredChunk
 import asyncio
 from app.core.logging_config import get_logger
 logger = get_logger(__name__)
+
+COHERE_RERANK_URL = "https://api.cohere.com/v2/rerank"
 
 if TYPE_CHECKING:
     from sentence_transformers import CrossEncoder
@@ -262,6 +267,29 @@ def rrf_fusion(
     return results
 
 
+async def _cohere_rerank(query: str, documents: list[str], model: str, top_n: int) -> list[tuple[int, float]]:
+    async def call() -> httpx.Response:
+        async with httpx.AsyncClient(timeout=settings.LLM_TIMEOUT) as client:
+            response = await client.post(
+                COHERE_RERANK_URL,
+                headers={
+                    "Authorization": f"Bearer {settings.COHERE_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": model,
+                    "query": query,
+                    "documents": documents,
+                    "top_n": top_n,
+                },
+            )
+            response.raise_for_status()
+            return response
+
+    response = await retry_on_rate_limit(call)
+    return [(r["index"], r["relevance_score"]) for r in response.json()["results"]]
+
+
 async def rerank_documents(
     query: str,
     chunks: list[StoredChunk],
@@ -272,6 +300,33 @@ async def rerank_documents(
     candidates = chunks[:candidate_count] if len(chunks) > candidate_count else chunks
     if not candidates:
         return []
+
+    from app.services.storage import get_settings
+
+    persisted = await get_settings()
+    provider = persisted.get("rerankerProvider") or "local"
+
+    if provider == "cohere" and settings.COHERE_API_KEY:
+        cohere_model = persisted.get("cohereRerankModel") or settings.COHERE_RERANK_MODEL
+        ranked = await _cohere_rerank(query, [c.content for c in candidates], cohere_model, top_n)
+        scored = [
+            RerankResult(
+                chunk=candidates[index],
+                chunk_id=candidates[index].id,
+                rerank_score=float(score),
+                method="reranker",
+            )
+            for index, score in ranked
+        ]
+        for i, r in enumerate(scored):
+            r.rank = i + 1
+        return scored
+
+    if provider == "cohere":
+        logger.warning(
+            "Reranker provider is 'cohere' but COHERE_API_KEY is not set; "
+            "falling back to the local cross-encoder instead."
+        )
 
     cross_encoder = _get_cross_encoder(model or "cross-encoder/ms-marco-MiniLM-L-6-v2")
     pairs = [(query, chunk.content) for chunk in candidates]

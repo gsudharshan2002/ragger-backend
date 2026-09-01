@@ -80,6 +80,7 @@ class RRFConfig(BaseSchema):
     k: int = 60
     vector_weight: float = 1.0
     bm25_weight: float = 1.0
+    top_n: int = 10
 
 
 class RerankerConfig(BaseSchema):
@@ -99,7 +100,8 @@ class MMRConfig(BaseSchema):
 class LLMConfig(BaseSchema):
     model: str = "openai/gpt-oss-20b"
     temperature: float = 0.7
-    max_tokens: int = 2048
+    top_p: float = 1.0
+    max_tokens: int = 1024
 
 
 class RagEngineConfig(BaseSchema):
