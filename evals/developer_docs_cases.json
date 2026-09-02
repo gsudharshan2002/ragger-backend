@@ -1,0 +1,66 @@
+[
+  {
+    "id": "swiftui-001",
+    "question": "What is SwiftUI used for, and what does it provide?",
+    "expected_answer_keywords": ["user interface", "views", "controls"],
+    "expected_sources": [{"document": "SwiftUI _ Apple Developer Documentation.pdf", "page": 1}],
+    "problem_type": "answer_quality",
+    "tags": ["swiftui", "framework-overview"]
+  },
+  {
+    "id": "swiftui-002",
+    "question": "What protocol should custom SwiftUI views conform to?",
+    "expected_answer_keywords": ["view", "protocol"],
+    "expected_sources": [{"document": "SwiftUI _ Apple Developer Documentation.pdf", "page": 2}],
+    "problem_type": "retrieval",
+    "tags": ["swiftui", "views"]
+  },
+  {
+    "id": "swiftui-003",
+    "question": "What does SwiftUI use scenes for?",
+    "expected_answer_keywords": ["user interface", "groupings"],
+    "expected_sources": [{"document": "SwiftUI _ Apple Developer Documentation.pdf", "page": 1}],
+    "problem_type": "retrieval",
+    "tags": ["swiftui", "scenes"]
+  },
+  {
+    "id": "swiftui-004",
+    "question": "Which platforms does SwiftUI support?",
+    "expected_answer_keywords": ["ios", "macos"],
+    "expected_sources": [{"document": "SwiftUI _ Apple Developer Documentation.pdf", "page": 4}],
+    "problem_type": "answer_quality",
+    "tags": ["swiftui", "platforms"]
+  },
+  {
+    "id": "core-graphics-001",
+    "question": "What is the Core Graphics framework based on?",
+    "expected_answer_keywords": ["quartz", "drawing engine"],
+    "expected_sources": [{"document": "Core Graphics _ Apple Developer Documentation.pdf", "page": 1}],
+    "problem_type": "retrieval",
+    "tags": ["core-graphics", "framework-overview"]
+  },
+  {
+    "id": "core-graphics-002",
+    "question": "What kind of rendering does Core Graphics provide?",
+    "expected_answer_keywords": ["2d", "rendering"],
+    "expected_sources": [{"document": "Core Graphics _ Apple Developer Documentation.pdf", "page": 1}],
+    "problem_type": "answer_quality",
+    "tags": ["core-graphics", "rendering"]
+  },
+  {
+    "id": "core-graphics-003",
+    "question": "What does CGImage represent?",
+    "expected_answer_keywords": ["bitmap image", "image mask"],
+    "expected_sources": [{"document": "Core Graphics _ Apple Developer Documentation.pdf", "page": 5}],
+    "problem_type": "retrieval",
+    "tags": ["core-graphics", "images"]
+  },
+  {
+    "id": "core-graphics-004",
+    "question": "What are CGSize and CGRect used for?",
+    "expected_answer_keywords": ["width", "height"],
+    "expected_sources": [{"document": "Core Graphics _ Apple Developer Documentation.pdf", "page": 3}],
+    "problem_type": "answer_quality",
+    "tags": ["core-graphics", "geometry"]
+  }
+]

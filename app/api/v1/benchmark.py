@@ -1,4 +1,6 @@
+import json
 import math
+from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -8,6 +10,19 @@ from uuid import uuid4
 from app.services.storage import get_all_datasets
 
 router = APIRouter()
+
+_DEVELOPER_DOC_RESULTS_DIR = Path(__file__).resolve().parents[3] / "evals" / "results"
+
+
+@router.get("/developer-docs/results")
+async def get_developer_docs_results() -> dict:
+    """Return the latest Week 6 developer-documentation evaluation reports."""
+    reports: dict[str, dict] = {}
+    for label in ("baseline", "improved"):
+        report_path = _DEVELOPER_DOC_RESULTS_DIR / f"{label}.json"
+        if report_path.exists():
+            reports[label] = json.loads(report_path.read_text(encoding="utf-8"))
+    return {"success": True, "data": reports}
 
 _ALL_METRIC_KEYS = [
     "hitRate", "recall", "precision", "mrr", "ndcg",
@@ -240,10 +255,10 @@ async def _execute_case(test_case, strategy, rag_config) -> tuple[dict, Optional
         if trace:
             actual_sources = [
                 {
-                    "document": source.get("document_name", ""),
+                    "document": source.get("documentName") or source.get("document_name", ""),
                     "page": source.get("page", 0),
                     "section": source.get("section", ""),
-                    "chunkId": source.get("chunk_id", ""),
+                    "chunkId": source.get("chunkId") or source.get("chunk_id", ""),
                     "score": source.get("score", 0),
                 }
                 for source in trace.get("sources", [])
