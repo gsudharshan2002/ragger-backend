@@ -1126,7 +1126,7 @@ async def execute_rag(
     yield emit(
         "trace",
         "trace.completed",
-        trace.model_dump(),
+        trace.model_dump(by_alias=True),
     )
 
 

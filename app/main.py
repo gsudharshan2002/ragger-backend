@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
+from app.core.rate_limit import RateLimitMiddleware
 from app.api.v1.router import api_router
 
 
@@ -33,6 +34,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Rate limiting (100 requests per minute for general endpoints)
+app.add_middleware(RateLimitMiddleware, requests_per_minute=100)
 
 # Include API router
 app.include_router(api_router, prefix=settings.API_PREFIX)

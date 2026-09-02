@@ -1,10 +1,11 @@
 import json
 from typing import AsyncGenerator
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import StreamingResponse
 
+from app.core.rate_limit import check_chat_rate_limit
 from app.models.schemas import ChatRequest, ChatResponse
 from app.services.rag_engine import execute_rag
 
@@ -12,8 +13,9 @@ router = APIRouter()
 
 
 @router.post("/stream")
-async def chat_stream(request: ChatRequest):
+async def chat_stream(request: ChatRequest, req: Request):
     """Stream RAG pipeline events as Server-Sent Events."""
+    check_chat_rate_limit(req)
 
     async def event_generator() -> AsyncGenerator[str, None]:
         async for event in execute_rag(
@@ -46,8 +48,9 @@ async def chat_stream(request: ChatRequest):
 
 
 @router.post("/send")
-async def chat_send(request: ChatRequest):
+async def chat_send(request: ChatRequest, req: Request):
     """Non-streaming chat."""
+    check_chat_rate_limit(req)
 
     trace = None
     answer = ""
