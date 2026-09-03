@@ -62,5 +62,45 @@
     "expected_sources": [{"document": "Combine | Apple Developer Documentation.pdf", "page": 4}],
     "problem_type": "answer_quality",
     "tags": ["combine", "subjects"]
+  },
+  {
+    "id": "combine-009",
+    "question": "How can values be emitted at regular time intervals without writing a raw timer callback yourself?",
+    "expected_answer_keywords": ["timer", "periodically", "publisher"],
+    "expected_sources": [{"document": "Combine | Apple Developer Documentation.pdf", "page": 5}],
+    "problem_type": "retrieval",
+    "tags": ["combine", "timers", "schedulers"]
+  },
+  {
+    "id": "combine-010",
+    "question": "How can property changes tracked through Objective-C's Key-Value Observing mechanism be turned into a stream of values?",
+    "expected_answer_keywords": ["key-value observing", "kvo", "publisher"],
+    "expected_sources": [{"document": "Combine | Apple Developer Documentation.pdf", "page": 5}],
+    "problem_type": "retrieval",
+    "tags": ["combine", "kvo"]
+  },
+  {
+    "id": "combine-011",
+    "question": "How would system notifications be delivered to subscribers instead of using NotificationCenter's traditional observer API directly?",
+    "expected_answer_keywords": ["notification center", "publisher", "subscribers"],
+    "expected_sources": [{"document": "Combine | Apple Developer Documentation.pdf", "page": 5}],
+    "problem_type": "answer_quality",
+    "tags": ["combine", "notifications"]
+  },
+  {
+    "id": "combine-012",
+    "question": "What protocol would you conform to if you needed custom logic for turning Swift values into a serialized data format?",
+    "expected_answer_keywords": ["encoding", "encoder"],
+    "expected_sources": [{"document": "Combine | Apple Developer Documentation.pdf", "page": 6}],
+    "problem_type": "retrieval",
+    "tags": ["combine", "encoding"]
+  },
+  {
+    "id": "combine-013",
+    "question": "How can a publisher's emitted values be consumed using Swift's async/await syntax instead of its own subscriber APIs?",
+    "expected_answer_keywords": ["asynchronous sequence", "async"],
+    "expected_sources": [{"document": "Combine | Apple Developer Documentation.pdf", "page": 6}],
+    "problem_type": "answer_quality",
+    "tags": ["combine", "async-await"]
   }
 ]

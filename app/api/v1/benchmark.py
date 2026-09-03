@@ -117,9 +117,21 @@ def _ndcg(retrieved: list[set[str]], expected: list[set[str]], k: int = 10) -> f
         return 0.0
 
     def dcg(items: list[set[str]]) -> float:
+        # Each expected source can only award relevance once, at the first
+        # (highest-ranked) retrieved item that matches it - otherwise several
+        # retrieved chunks landing on the same expected page (common, since a
+        # page is usually split into multiple chunks) would each score full
+        # relevance while idcg still assumes only len(expected) relevant
+        # items exist, letting dcg exceed idcg and ndcg exceed 1.0.
         score = 0.0
+        claimed: set[int] = set()
         for i, item in enumerate(items[:k]):
-            rel = 1 if any(_is_match(item, e) for e in expected) else 0
+            rel = 0
+            for idx, e in enumerate(expected):
+                if idx not in claimed and _is_match(item, e):
+                    rel = 1
+                    claimed.add(idx)
+                    break
             score += (2 ** rel - 1) / math.log2(i + 2)
         return score
 
