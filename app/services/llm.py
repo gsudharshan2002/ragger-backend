@@ -33,13 +33,15 @@ async def _open_stream_with_retry(
     base_delay: float = 2.0,
 ):
     """Open a streaming POST, retrying with backoff if the provider responds
-    429 before any tokens are sent. Returns (context_manager, response) -
-    caller is responsible for exiting the context manager once done."""
+    429 (rate limited) or 503 (transiently overloaded - Gemini's dominant
+    failure mode under load, as opposed to Groq's 429) before any tokens are
+    sent. Returns (context_manager, response) - caller is responsible for
+    exiting the context manager once done."""
     attempt = 0
     while True:
         cm = client.stream("POST", url, headers=headers, json=json_body)
         response = await cm.__aenter__()
-        if response.status_code != 429 or attempt >= max_retries:
+        if response.status_code not in (429, 503) or attempt >= max_retries:
             return cm, response
 
         await response.aread()
@@ -47,7 +49,7 @@ async def _open_stream_with_retry(
         retry_after = response.headers.get("retry-after")
         delay = float(retry_after) if retry_after else base_delay * (2 ** attempt)
         logger.warning(
-            f"LLM provider rate limited (429); retrying in {delay:.1f}s "
+            f"LLM provider returned {response.status_code}; retrying in {delay:.1f}s "
             f"(attempt {attempt + 1}/{max_retries})..."
         )
         await asyncio.sleep(delay)
@@ -60,13 +62,13 @@ def _get_api_key(provider: str) -> Optional[str]:
     return settings.GROQ_API_KEY
 
 
-def _get_api_url(provider: str) -> str:
+def get_api_url(provider: str) -> str:
     if provider == "gemini":
         return GEMINI_API_URL
     return GROQ_API_URL
 
 
-def _persisted_provider_and_keys(persisted: dict) -> tuple[str, Optional[str]]:
+def get_persisted_provider_and_keys(persisted: dict) -> tuple[str, Optional[str]]:
     provider = persisted.get("llmProvider") or settings.LLM_PROVIDER
     if provider == "gemini":
         api_key = persisted.get("geminiApiKey") or settings.GEMINI_API_KEY
@@ -79,7 +81,7 @@ async def is_llm_configured() -> bool:
     from app.services.storage import get_settings
 
     persisted = await get_settings()
-    _, api_key = _persisted_provider_and_keys(persisted)
+    _, api_key = get_persisted_provider_and_keys(persisted)
     return bool(api_key)
 
 
@@ -94,7 +96,7 @@ async def generate_completion_stream(
     from app.services.storage import get_settings
 
     persisted = await get_settings()
-    provider, api_key = _persisted_provider_and_keys(persisted)
+    provider, api_key = get_persisted_provider_and_keys(persisted)
 
     if not api_key:
         env_var = "GEMINI_API_KEY" if provider == "gemini" else "GROQ_API_KEY"
@@ -118,7 +120,7 @@ async def generate_completion_stream(
         async with httpx.AsyncClient(timeout=settings.LLM_STREAM_TIMEOUT) as client:
             cm, response = await _open_stream_with_retry(
                 client,
-                _get_api_url(provider),
+                get_api_url(provider),
                 headers={
                     "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json",

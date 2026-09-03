@@ -10,11 +10,29 @@ from uuid import uuid4
 
 from app.models.schemas import RagStrategy
 from app.services.rag_engine import execute_rag
+from evals.assertions import (
+    check_deprecated_without_migration_note,
+    check_unknown_endpoints,
+    load_deprecations,
+    load_openapi_paths,
+)
 from evals.judge import judge_answer
+from evals.ragas_metrics import compute_context_precision, compute_faithfulness
 
 ROOT = Path(__file__).resolve().parent
 CASES_PATH = ROOT / "developer_docs_cases.json"
 RESULTS_DIR = ROOT / "results"
+
+# Loaded once at import time, not per-case - these fixtures don't change
+# mid-run. If they're ever missing (e.g. this eval script points at a
+# different, non-GitHub docs set), the assertions just find nothing to
+# flag rather than crashing the whole eval.
+try:
+    _OPENAPI_PATHS = load_openapi_paths()
+    _DEPRECATIONS = load_deprecations()
+except OSError:
+    _OPENAPI_PATHS = []
+    _DEPRECATIONS = []
 
 TAXONOMY_MODES = [
     "retrieval_failure",
@@ -52,7 +70,7 @@ def _answer_score(answer: str, keywords: list[str]) -> float:
     return sum(keyword.lower() in lowered for keyword in keywords) / len(keywords)
 
 
-async def _run_case(case: dict[str, Any], strategy: str, use_judge: bool) -> dict[str, Any]:
+async def _run_case(case: dict[str, Any], strategy: str, use_judge: bool, use_ragas: bool = False) -> dict[str, Any]:
     try:
         answer = ""
         trace: dict[str, Any] | None = None
@@ -93,13 +111,38 @@ async def _run_case(case: dict[str, Any], strategy: str, use_judge: bool) -> dic
         answer_score = (1.0 if judge_verdict == "pass" else 0.0) if judge_verdict is not None else keyword_answer_score
         combined_score = (retrieval_score + answer_score) / 2
 
-        status = "passed" if combined_score == 1.0 and not error else "failed"
+        # Deterministic checks the judge is explicitly told not to grade
+        # (see judge.py's system prompt) - a parser and a spec/list lookup,
+        # not an LLM guess. A violation fails the case regardless of what
+        # the judge or keyword score said, because these are hard facts,
+        # not matters of judgment.
+        unknown_endpoints = check_unknown_endpoints(actual_answer, _OPENAPI_PATHS)
+        deprecation_violations = check_deprecated_without_migration_note(actual_answer, _DEPRECATIONS)
+        assertions_passed = not unknown_endpoints and not deprecation_violations
+
+        # Bonus: RAGAS-style faithfulness and context precision. Opt-in only
+        # (use_ragas) - each is its own LLM call, and neither feeds status/
+        # combined_score, since they measure something the pass/fail scores
+        # above don't: whether the answer is grounded in *some* context
+        # (faithfulness) and whether the *right* context was ranked highly
+        # (context precision) - a case can be 100% faithful while confidently
+        # grounded in the wrong document version.
+        faithfulness = None
+        context_precision = None
+        if use_ragas:
+            prompt_context = (trace or {}).get("prompt", {}).get("context", "")
+            faithfulness = (await compute_faithfulness(actual_answer, prompt_context))["score"]
+            context_precision = (await compute_context_precision(case["question"], prompt_context))["score"]
+
+        status = "passed" if combined_score == 1.0 and not error and assertions_passed else "failed"
         return {
             "id": case["id"],
             "question": case["question"],
             "problem_type": case["problem_type"],
             "mode": case.get("mode", "unknown"),
             "tags": case.get("tags", []),
+            "regression": bool(case.get("regression", False)),
+            "regression_evidence": case.get("regression_evidence"),
             "status": status,
             "retrieval_score": round(retrieval_score, 4),
             "answer_score": round(answer_score, 4),
@@ -107,6 +150,12 @@ async def _run_case(case: dict[str, Any], strategy: str, use_judge: bool) -> dic
             "judge_verdict": judge_verdict,
             "judge_reasoning": judge_reasoning,
             "combined_score": round(combined_score, 4),
+            "assertions": {
+                "unknown_endpoints": unknown_endpoints,
+                "deprecated_without_migration_note": [v["symbols"] for v in deprecation_violations],
+            },
+            "faithfulness": faithfulness,
+            "context_precision": context_precision,
             "expected_sources": expected_sources,
             "actual_sources": actual_sources,
             "expected_answer_keywords": expected_keywords,
@@ -122,6 +171,8 @@ async def _run_case(case: dict[str, Any], strategy: str, use_judge: bool) -> dic
             "problem_type": case.get("problem_type", ""),
             "mode": case.get("mode", "unknown"),
             "tags": case.get("tags", []),
+            "regression": bool(case.get("regression", False)),
+            "regression_evidence": case.get("regression_evidence"),
             "status": "failed",
             "retrieval_score": 0.0,
             "answer_score": 0.0,
@@ -129,6 +180,9 @@ async def _run_case(case: dict[str, Any], strategy: str, use_judge: bool) -> dic
             "judge_verdict": None,
             "judge_reasoning": "",
             "combined_score": 0.0,
+            "assertions": {"unknown_endpoints": [], "deprecated_without_migration_note": []},
+            "faithfulness": None,
+            "context_precision": None,
             "expected_sources": case.get("expected_sources", []),
             "actual_sources": [],
             "expected_answer_keywords": case.get("expected_answer_keywords", []),
@@ -141,6 +195,16 @@ def _average(results: list[dict[str, Any]], key: str) -> float:
     return round(sum(result[key] for result in results) / len(results), 4) if results else 0.0
 
 
+def _average_present(results: list[dict[str, Any]], key: str) -> float | None:
+    """Like _average, but for optional (possibly-None) fields such as the
+    RAGAS bonus metrics, which are only populated when use_ragas=True.
+    Cases where the metric wasn't computed are excluded rather than
+    counted as 0 - otherwise an average across a mostly-uncomputed set
+    would understate the real score."""
+    values = [r[key] for r in results if r.get(key) is not None]
+    return round(sum(values) / len(values), 4) if values else None
+
+
 def _summary(results: list[dict[str, Any]]) -> dict[str, Any]:
     by_type: dict[str, list[dict[str, Any]]] = {}
     by_mode: dict[str, list[dict[str, Any]]] = {}
@@ -151,6 +215,8 @@ def _summary(results: list[dict[str, Any]]) -> dict[str, Any]:
         "retrieval_score": _average(results, "retrieval_score"),
         "answer_score": _average(results, "answer_score"),
         "combined_score": _average(results, "combined_score"),
+        "faithfulness": _average_present(results, "faithfulness"),
+        "context_precision": _average_present(results, "context_precision"),
         "problem_type_scores": {
             problem_type: {
                 "cases": len(group),
@@ -190,6 +256,12 @@ def _parse_args() -> argparse.Namespace:
         help="Skip the LLM judge and score answers with the keyword-matching rule "
         "only (no GROQ_API_KEY required, faster, but cruder).",
     )
+    parser.add_argument(
+        "--ragas",
+        action="store_true",
+        help="Also compute the bonus RAGAS-style faithfulness and context precision "
+        "metrics for every case (2 extra LLM calls per case - off by default).",
+    )
     return parser.parse_args()
 
 
@@ -217,6 +289,7 @@ async def run_strategy(
     use_judge: bool = True,
     label: str | None = None,
     cases_file: str | None = None,
+    use_ragas: bool = False,
 ) -> tuple[dict[str, Any], Path]:
     """Run the developer-documentation eval set through a single retrieval
     strategy and persist a timestamped report to evals/results/.
@@ -225,6 +298,10 @@ async def run_strategy(
     came from (e.g. the uploaded file's name) - it is stored as report
     metadata verbatim and must not be assumed to be developer_docs_cases.json.
 
+    `use_ragas` opts into the bonus faithfulness/context-precision metrics
+    (evals/ragas_metrics.py) - off by default since each case costs 2 extra
+    LLM calls.
+
     Returns (report dict, path the report was written to). Reused by the CLI
     (main) and the API endpoint that powers the Week 6 Refresh button so both
     produce identical reports.
@@ -232,7 +309,7 @@ async def run_strategy(
     cases_file_name = cases_file or CASES_PATH.name
     labels = label or Path(cases_file_name).stem
     RESULTS_DIR.mkdir(exist_ok=True)
-    results = [await _run_case(case, strategy, use_judge) for case in cases]
+    results = [await _run_case(case, strategy, use_judge, use_ragas) for case in cases]
     created_at = datetime.now(UTC)
     report = {
         "track": "developer-documentation",
@@ -259,7 +336,9 @@ async def main() -> None:
     previous_run = _latest_previous_run(RESULTS_DIR)
 
     use_judge = not args.no_judge
-    report, _ = await run_strategy(cases, args.strategy, use_judge, label, cases_file=cases_path.name)
+    report, _ = await run_strategy(
+        cases, args.strategy, use_judge, label, cases_file=cases_path.name, use_ragas=args.ragas
+    )
 
     if previous_run:
         before = previous_run["summary"]["combined_score"]
@@ -277,6 +356,27 @@ async def main() -> None:
     print("\nPass rate by mode:")
     for mode, stats in report["summary"]["mode_scores"].items():
         print(f"  {mode}: {stats['passed']}/{stats['cases']} passed ({stats['pass_rate']:.2%})")
+
+    if args.ragas:
+        faithfulness = report["summary"].get("faithfulness")
+        context_precision = report["summary"].get("context_precision")
+        print(f"\nAverage faithfulness: {faithfulness}")
+        print(f"Average context precision: {context_precision}")
+        # The bonus finding: an answer that's fully grounded in *some*
+        # context (faithfulness >= 0.9) while that context was the wrong
+        # document version for the question asked (mode == wrong_source).
+        # The averages above can look fine while hiding exactly this.
+        confidently_wrong = [
+            r for r in report["results"]
+            if r.get("mode") == "wrong_source" and (r.get("faithfulness") or 0) >= 0.9
+        ]
+        if confidently_wrong:
+            print("\nConfidently-wrong candidates (high faithfulness, wrong-version mode):")
+            for r in confidently_wrong:
+                print(
+                    f"  [{r['id']}] faithfulness={r['faithfulness']} "
+                    f"context_precision={r.get('context_precision')} retrieval_score={r['retrieval_score']}"
+                )
 
     print(json.dumps(report["summary"], indent=2))
     print(f"Saved report for strategy={report['strategy']}, label={report['label']}")

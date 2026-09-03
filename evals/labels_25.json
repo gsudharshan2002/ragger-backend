@@ -1,0 +1,21 @@
+{
+  "source_report": "20260903T165150_hybrid-rerank-mmr_f27c93df_developer_docs_cases.json",
+  "source_report_created_at": "2026-09-03T16:51:50.350508+00:00",
+  "criterion": "correct and helpful (the judge's single binary pass/fail criterion)",
+  "labeled_at": "2026-09-03T17:06:56.241451+00:00",
+  "labels": {
+    "combine-001": "pass",
+    "combine-002": "pass",
+    "combine-003": "fail",
+    "combine-004": "fail",
+    "combine-005": "fail",
+    "combine-006": "fail",
+    "combine-007": "fail",
+    "combine-008": "fail",
+    "combine-009": "fail",
+    "combine-010": "fail",
+    "combine-011": "fail",
+    "combine-012": "fail",
+    "combine-013": "fail"
+  }
+}

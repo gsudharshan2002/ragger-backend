@@ -86,6 +86,7 @@ class DeveloperDocsRunRequest(BaseModel):
     improvedStrategy: str = "hybrid-rrf"
     noJudge: bool = False
     casesFileName: Optional[str] = None
+    useRagas: bool = False
 
 
 @router.post("/developer-docs/run")
@@ -98,6 +99,8 @@ async def run_developer_docs(payload: DeveloperDocsRunRequest) -> dict:
       - baselineStrategy / improvedStrategy: which two RagStrategy slugs to compare
       - noJudge: skip LLM-as-judge (faster, keyword-only scoring)
       - casesFileName: the uploaded file's name, stored as report metadata
+      - useRagas: also compute the bonus faithfulness/context-precision metrics
+        (2 extra LLM calls per case per strategy - off by default)
 
     Returns the two reports it just computed directly (not re-derived from
     directory contents), so the response always reflects exactly the two
@@ -110,14 +113,108 @@ async def run_developer_docs(payload: DeveloperDocsRunRequest) -> dict:
 
     baseline_report, baseline_path = await run_strategy(
         payload.cases, payload.baselineStrategy, use_judge=not payload.noJudge,
-        label=label, cases_file=cases_file,
+        label=label, cases_file=cases_file, use_ragas=payload.useRagas,
     )
     improved_report, improved_path = await run_strategy(
         payload.cases, payload.improvedStrategy, use_judge=not payload.noJudge,
-        label=label, cases_file=cases_file,
+        label=label, cases_file=cases_file, use_ragas=payload.useRagas,
     )
     _write_pair_pointer(baseline_path.name, improved_path.name)
     return {"success": True, "data": {"baseline": baseline_report, "improved": improved_report}}
+
+
+class GenerateForLabelingRequest(BaseModel):
+    cases: list[dict]
+    strategy: str = "bm25"
+    casesFileName: Optional[str] = None
+
+
+@router.post("/developer-docs/generate-for-labeling")
+async def generate_for_labeling(payload: GenerateForLabelingRequest) -> dict:
+    """Run the eval once with the judge OFF, producing a frozen answer set
+    with no judge_verdict anywhere in it - the only kind of report safe to
+    hand-label blind from (see evals/labeling.py). A single-strategy run,
+    not a baseline/improved comparison pair - labeling needs one frozen
+    answer set, not two.
+    """
+    from evals.labeling import get_label_session
+    from evals.run_developer_docs import run_strategy
+
+    cases_file = payload.casesFileName or "developer_docs_cases.json"
+    label = Path(cases_file).stem
+    await run_strategy(payload.cases, payload.strategy, use_judge=False, label=label, cases_file=cases_file)
+    return {"success": True, "data": get_label_session()}
+
+
+@router.get("/developer-docs/label-session")
+async def get_label_session_endpoint() -> dict:
+    """Everything the labeling UI needs: the latest judge-free report's
+    cases, any labels already saved, and whether those saved labels
+    conflict with the current report (labeled against an older run)."""
+    from evals.labeling import get_label_session
+
+    return {"success": True, "data": get_label_session()}
+
+
+class LabelRequest(BaseModel):
+    case_id: str
+    label: str  # "pass" | "fail"
+
+
+@router.post("/developer-docs/label")
+async def save_label_endpoint(payload: LabelRequest) -> dict:
+    """Save one blind label. Same guarantee as the CLI tool: refuses if
+    labels_25.json already exists against a different report than the
+    current judge-free one, so labels from two different answer sets can
+    never get silently mixed together."""
+    from evals.labeling import find_latest_no_judge_report, save_label
+
+    report = find_latest_no_judge_report()
+    if not report:
+        raise HTTPException(status_code=404, detail="No --no-judge report found to label against.")
+    try:
+        data = save_label(report["_source_path"], report.get("created_at", ""), payload.case_id, payload.label)
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    return {"success": True, "data": {"labeled_count": len(data["labels"])}}
+
+
+@router.post("/developer-docs/validate-judge")
+async def validate_judge_endpoint() -> dict:
+    """Run the CURRENTLY active judge prompt against the exact frozen
+    answers already hand-labeled in labels_25.json, and compute agreement.
+    Save judge.py's prompt as judge_v1.txt / judge_v2.txt around whichever
+    call of this you treat as the before/after milestone."""
+    from evals.labeling import run_judge_validation
+
+    try:
+        result = await run_judge_validation()
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    return {"success": True, "data": result}
+
+
+_PREDICTION_PATH = Path(__file__).resolve().parents[3] / "evals" / "prediction.txt"
+
+
+class PredictionRequest(BaseModel):
+    text: str
+
+
+@router.post("/developer-docs/prediction")
+async def save_prediction(payload: PredictionRequest) -> dict:
+    """Save the required one-sentence prediction of what a judge-prompt
+    iteration will fix - written BEFORE the iteration, so it can be checked
+    against what the iteration actually changed afterward."""
+    _PREDICTION_PATH.write_text(payload.text.strip() + "\n", encoding="utf-8")
+    return {"success": True}
+
+
+@router.get("/developer-docs/prediction")
+async def get_prediction() -> dict:
+    if not _PREDICTION_PATH.exists():
+        return {"success": True, "data": {"text": "", "exists": False}}
+    return {"success": True, "data": {"text": _PREDICTION_PATH.read_text(encoding="utf-8").strip(), "exists": True}}
 
 
 _ALL_METRIC_KEYS = [

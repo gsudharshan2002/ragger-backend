@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     GROQ_API_KEY: Optional[str] = None
     GEMINI_API_KEY: Optional[str] = None
     GROQ_MODEL: str = "openai/gpt-oss-20b"
-    GEMINI_MODEL: str = "gemini-3.5-flash"
+    GEMINI_MODEL: str = "gemini-3.6-flash"
     LLM_TEMPERATURE: float = 0.7
     LLM_TOP_P: float = 1.0
     LLM_MAX_TOKENS: int = 1024

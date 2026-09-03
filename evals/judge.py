@@ -1,8 +1,10 @@
 """LLM-as-judge for the developer-documentation eval's answer quality.
 
-Grades each answer pass/fail using Groq, as a replacement for pure keyword
-matching. Must be validated against human grading (see validate_judge.py)
-before its number is trusted.
+Grades each answer pass/fail using whichever LLM provider is currently
+active (see app/services/llm.py's provider selection - Settings UI choice,
+falling back to .env), as a replacement for pure keyword matching. Must be
+validated against human grading (see validate_judge.py) before its number
+is trusted.
 """
 
 import json
@@ -10,9 +12,7 @@ from typing import Any
 
 import httpx
 
-from app.core.config import settings
-
-GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+from app.services.llm import get_api_url, get_persisted_provider_and_keys
 
 _JUDGE_SYSTEM_PROMPT = (
     "You are grading whether an AI assistant's answer to a developer-documentation "
@@ -22,6 +22,13 @@ _JUDGE_SYSTEM_PROMPT = (
     "it repeats exact words. An answer that conveys the same facts in different "
     "wording should pass. An answer that is vague, wrong, or refuses despite the "
     "facts being gradeable should fail.\n\n"
+    "Do not check two specific things yourself - deterministic code verifies "
+    "them separately, and re-litigating them here would be redundant: (1) "
+    "whether an endpoint path the answer mentions actually exists in the API "
+    "spec, and (2) whether a deprecated symbol the answer mentions is missing "
+    "its required migration note. Grade everything else about correctness "
+    "and helpfulness as usual - an answer can still fail for being wrong or "
+    "unhelpful in ways unrelated to those two checks.\n\n"
     "Respond with strict JSON only, no other text: "
     '{"verdict": "pass" or "fail", "reasoning": "one short sentence"}'
 )
@@ -40,12 +47,20 @@ async def judge_answer(question: str, answer: str, expected_keywords: list[str])
     """Grade one answer pass/fail. Returns {"verdict", "reasoning"} - verdict is
     None (not "fail") when the judge call itself couldn't be made, so callers
     can tell "graded fail" apart from "couldn't grade"."""
-    api_key = settings.GROQ_API_KEY
+    from app.services.storage import get_settings
+
+    persisted = await get_settings()
+    provider, api_key = get_persisted_provider_and_keys(persisted)
     if not api_key:
-        return {"verdict": None, "reasoning": "GROQ_API_KEY not set - judge skipped"}
+        env_var = "GEMINI_API_KEY" if provider == "gemini" else "GROQ_API_KEY"
+        return {"verdict": None, "reasoning": f"{env_var} not set - judge skipped"}
+
+    model = (
+        persisted.get("geminiModel") if provider == "gemini" else persisted.get("groqModel")
+    ) or ""
 
     body = {
-        "model": settings.GROQ_MODEL,
+        "model": model,
         "messages": [
             {"role": "system", "content": _JUDGE_SYSTEM_PROMPT},
             {"role": "user", "content": _judge_user_prompt(question, answer, expected_keywords)},
@@ -57,7 +72,7 @@ async def judge_answer(question: str, answer: str, expected_keywords: list[str])
     try:
         async with httpx.AsyncClient(timeout=30) as client:
             response = await client.post(
-                GROQ_API_URL,
+                get_api_url(provider),
                 headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
                 json=body,
             )

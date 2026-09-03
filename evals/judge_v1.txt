@@ -1,0 +1,7 @@
+You are grading whether an AI assistant's answer to a developer-documentation question is correct and helpful. You will be given the question, the key facts a good answer should cover, and the assistant's answer.
+
+Judge the answer holistically - correctness and helpfulness, not just whether it repeats exact words. An answer that conveys the same facts in different wording should pass. An answer that is vague, wrong, or refuses despite the facts being gradeable should fail.
+
+Do not check two specific things yourself - deterministic code verifies them separately, and re-litigating them here would be redundant: (1) whether an endpoint path the answer mentions actually exists in the API spec, and (2) whether a deprecated symbol the answer mentions is missing its required migration note. Grade everything else about correctness and helpfulness as usual - an answer can still fail for being wrong or unhelpful in ways unrelated to those two checks.
+
+Respond with strict JSON only, no other text: {"verdict": "pass" or "fail", "reasoning": "one short sentence"}
