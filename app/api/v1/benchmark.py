@@ -16,13 +16,32 @@ _DEVELOPER_DOC_RESULTS_DIR = Path(__file__).resolve().parents[3] / "evals" / "re
 
 @router.get("/developer-docs/results")
 async def get_developer_docs_results() -> dict:
-    """Return the latest Week 6 developer-documentation evaluation reports."""
-    reports: dict[str, dict] = {}
-    for label in ("baseline", "improved"):
-        report_path = _DEVELOPER_DOC_RESULTS_DIR / f"{label}.json"
-        if report_path.exists():
-            reports[label] = json.loads(report_path.read_text(encoding="utf-8"))
-    return {"success": True, "data": reports}
+    """Return the Week 6 developer-documentation evaluation comparison.
+
+    The eval set and target document are no longer fixed - runs accumulate
+    as separate timestamped files under evals/results/, so this always
+    compares the two most recent runs (whatever cases/document they used)
+    rather than two hardcoded filenames.
+    """
+    if not _DEVELOPER_DOC_RESULTS_DIR.exists():
+        return {"success": True, "data": {}}
+
+    reports = []
+    for report_path in _DEVELOPER_DOC_RESULTS_DIR.glob("*.json"):
+        try:
+            report = json.loads(report_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+        if "created_at" in report and "summary" in report:
+            reports.append(report)
+    reports.sort(key=lambda r: r["created_at"])
+
+    data: dict[str, dict] = {}
+    if reports:
+        data["improved"] = reports[-1]
+    if len(reports) >= 2:
+        data["baseline"] = reports[-2]
+    return {"success": True, "data": data}
 
 _ALL_METRIC_KEYS = [
     "hitRate", "recall", "precision", "mrr", "ndcg",

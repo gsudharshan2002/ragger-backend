@@ -64,14 +64,9 @@ The backend includes the deterministic Week 6 developer-documentation evaluation
 
 `GET /api/v1/benchmark/developer-docs/results`
 
-The response data may contain `baseline` and `improved`, each with `summary` and per-case `results`. Render the summary and comparison without assuming both labels exist. The checked-in reports currently show:
+The eval isn't tied to a fixed document or a fixed pair of labels - each `uv run python -m evals.run_developer_docs` run is saved as its own timestamped file, and this endpoint always returns the two most recent runs, whichever cases/document they used. The response data may contain `baseline` (the older of the two) and `improved` (the newer), each with `summary` and per-case `results`. Render the summary and comparison without assuming both labels exist - there may be only one run so far, or none.
 
-- baseline combined score: `0.7812`
-- improved combined score: `0.8438`
-- improved retrieval score: `1.0`
-- improved answer score: `0.8125`
-
-This is an improvement, not a 100% pass. The frontend should make partial/failed cases visible and should not label Week 6 as complete solely because an `improved` report exists.
+Treat the scores as a relative before/after comparison, not a pass/fail rubric: an `improved` report scoring higher than `baseline` is an improvement, not necessarily a 100% pass. The frontend should make partial/failed cases visible and should not label Week 6 as complete solely because an `improved` report exists.
 
 ## RAG settings
 

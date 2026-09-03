@@ -9,6 +9,7 @@ from typing import Any
 
 from app.models.schemas import RagStrategy
 from app.services.rag_engine import execute_rag
+from evals.judge import judge_answer
 
 ROOT = Path(__file__).resolve().parent
 CASES_PATH = ROOT / "developer_docs_cases.json"
@@ -37,7 +38,7 @@ def _answer_score(answer: str, keywords: list[str]) -> float:
     return sum(keyword.lower() in lowered for keyword in keywords) / len(keywords)
 
 
-async def _run_case(case: dict[str, Any], strategy: str) -> dict[str, Any]:
+async def _run_case(case: dict[str, Any], strategy: str, use_judge: bool) -> dict[str, Any]:
     answer = ""
     trace: dict[str, Any] | None = None
     error = ""
@@ -53,6 +54,7 @@ async def _run_case(case: dict[str, Any], strategy: str) -> dict[str, Any]:
 
     actual_sources = (trace or {}).get("sources", [])
     expected_sources = case.get("expected_sources", [])
+    # Cheap rule-based checks first: does retrieval find the right source?
     retrieval_score = (
         sum(any(_source_matches(actual, expected) for actual in actual_sources) for expected in expected_sources)
         / len(expected_sources)
@@ -60,7 +62,20 @@ async def _run_case(case: dict[str, Any], strategy: str) -> dict[str, Any]:
         else 0.0
     )
     actual_answer = (trace or {}).get("llm", {}).get("answer") or answer
-    answer_score = _answer_score(actual_answer, case.get("expected_answer_keywords", []))
+    expected_keywords = case.get("expected_answer_keywords", [])
+    keyword_answer_score = _answer_score(actual_answer, expected_keywords)
+
+    # Harder to check with a rule: does the answer actually convey those facts,
+    # correctly and helpfully? An LLM judge grades that; its number is only
+    # trustworthy once validated against human grading (see validate_judge.py).
+    judge_verdict: str | None = None
+    judge_reasoning = ""
+    if use_judge:
+        judge_result = await judge_answer(case["question"], actual_answer, expected_keywords)
+        judge_verdict = judge_result["verdict"]
+        judge_reasoning = judge_result["reasoning"]
+
+    answer_score = (1.0 if judge_verdict == "pass" else 0.0) if judge_verdict is not None else keyword_answer_score
     combined_score = (retrieval_score + answer_score) / 2
 
     status = "passed" if combined_score == 1.0 and not error else "failed"
@@ -72,10 +87,13 @@ async def _run_case(case: dict[str, Any], strategy: str) -> dict[str, Any]:
         "status": status,
         "retrieval_score": round(retrieval_score, 4),
         "answer_score": round(answer_score, 4),
+        "keyword_answer_score": round(keyword_answer_score, 4),
+        "judge_verdict": judge_verdict,
+        "judge_reasoning": judge_reasoning,
         "combined_score": round(combined_score, 4),
         "expected_sources": expected_sources,
         "actual_sources": actual_sources,
-        "expected_answer_keywords": case.get("expected_answer_keywords", []),
+        "expected_answer_keywords": expected_keywords,
         "answer": actual_answer,
         "error": error,
     }
@@ -105,39 +123,79 @@ def _summary(results: list[dict[str, Any]]) -> dict[str, Any]:
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--label", default="latest", choices=("baseline", "improved", "latest"))
+    parser.add_argument(
+        "--cases",
+        default=str(CASES_PATH),
+        help="Path to the eval cases JSON file (defaults to developer_docs_cases.json). "
+        "Point this at a different file to evaluate a different document.",
+    )
+    parser.add_argument(
+        "--label",
+        default=None,
+        help="Optional free-form tag stored with the run (e.g. a RAG config name). "
+        "Purely descriptive - it no longer selects which file gets overwritten.",
+    )
     parser.add_argument("--strategy", default="bm25")
+    parser.add_argument(
+        "--no-judge",
+        action="store_true",
+        help="Skip the LLM judge and score answers with the keyword-matching rule "
+        "only (no GROQ_API_KEY required, faster, but cruder).",
+    )
     return parser.parse_args()
+
+
+def _latest_previous_run(results_dir: Path) -> dict[str, Any] | None:
+    """Return the most recent existing eval run report, or None if there isn't
+    one. Requires "summary" (not just "created_at") so judge-validation
+    reports - which are also timestamped JSON in this same directory but
+    aren't eval runs - are never mistaken for one."""
+    reports = []
+    for path in results_dir.glob("*.json"):
+        try:
+            report = json.loads(path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+        if "created_at" in report and "summary" in report:
+            reports.append(report)
+    if not reports:
+        return None
+    return max(reports, key=lambda r: r["created_at"])
 
 
 async def main() -> None:
     args = _parse_args()
-    cases = json.loads(CASES_PATH.read_text(encoding="utf-8"))
-    results = [await _run_case(case, args.strategy) for case in cases]
+    cases_path = Path(args.cases)
+    cases = json.loads(cases_path.read_text(encoding="utf-8"))
+    label = args.label or cases_path.stem
+
+    RESULTS_DIR.mkdir(exist_ok=True)
+    previous_run = _latest_previous_run(RESULTS_DIR)
+
+    use_judge = not args.no_judge
+    results = [await _run_case(case, args.strategy, use_judge) for case in cases]
+    created_at = datetime.now(UTC)
     report = {
         "track": "developer-documentation",
-        "label": args.label,
+        "label": label,
+        "cases_file": cases_path.name,
         "strategy": args.strategy,
-        "created_at": datetime.now(UTC).isoformat(),
+        "created_at": created_at.isoformat(),
         "summary": _summary(results),
         "results": results,
     }
 
-    RESULTS_DIR.mkdir(exist_ok=True)
-    output_path = RESULTS_DIR / f"{args.label}.json"
+    output_path = RESULTS_DIR / f"{created_at.strftime('%Y%m%dT%H%M%S')}_{label}.json"
     output_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
-    if args.label == "latest":
-        (RESULTS_DIR / "latest.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
 
-    baseline_path = RESULTS_DIR / "baseline.json"
-    if args.label == "improved" and baseline_path.exists():
-        baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
-        before = baseline["summary"]["combined_score"]
+    if previous_run:
+        before = previous_run["summary"]["combined_score"]
         after = report["summary"]["combined_score"]
+        print(f"previous_run_label={previous_run.get('label', 'unknown')}")
         print(f"before_combined_score={before:.4f}")
         print(f"after_combined_score={after:.4f}")
         print(f"delta={after - before:+.4f}")
-        before_types = baseline["summary"].get("problem_type_scores", {})
+        before_types = previous_run["summary"].get("problem_type_scores", {})
         for problem_type, current in report["summary"]["problem_type_scores"].items():
             previous = before_types.get(problem_type, {}).get("combined_score", 0.0)
             print(f"{problem_type}_before={previous:.4f}")

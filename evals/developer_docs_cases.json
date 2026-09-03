@@ -1,66 +1,66 @@
 [
   {
-    "id": "swiftui-001",
-    "question": "What is SwiftUI used for, and what does it provide?",
-    "expected_answer_keywords": ["user interface", "views", "controls"],
-    "expected_sources": [{"document": "SwiftUI _ Apple Developer Documentation.pdf", "page": 1}],
+    "id": "combine-001",
+    "question": "What does the Combine framework provide?",
+    "expected_answer_keywords": ["declarative", "swift api", "values over time"],
+    "expected_sources": [{"document": "Combine | Apple Developer Documentation.pdf", "page": 1}],
     "problem_type": "answer_quality",
-    "tags": ["swiftui", "framework-overview"]
+    "tags": ["combine", "framework-overview"]
   },
   {
-    "id": "swiftui-002",
-    "question": "What protocol should custom SwiftUI views conform to?",
-    "expected_answer_keywords": ["view", "protocol"],
-    "expected_sources": [{"document": "SwiftUI _ Apple Developer Documentation.pdf", "page": 2}],
+    "id": "combine-002",
+    "question": "What does the Publisher protocol declare?",
+    "expected_answer_keywords": ["sequence of values", "over time"],
+    "expected_sources": [{"document": "Combine | Apple Developer Documentation.pdf", "page": 1}],
     "problem_type": "retrieval",
-    "tags": ["swiftui", "views"]
+    "tags": ["combine", "publishers"]
   },
   {
-    "id": "swiftui-003",
-    "question": "What does SwiftUI use scenes for?",
-    "expected_answer_keywords": ["user interface", "groupings"],
-    "expected_sources": [{"document": "SwiftUI _ Apple Developer Documentation.pdf", "page": 1}],
+    "id": "combine-003",
+    "question": "What does a Subscriber do at the end of a chain of publishers?",
+    "expected_answer_keywords": ["acts on elements", "receives"],
+    "expected_sources": [{"document": "Combine | Apple Developer Documentation.pdf", "page": 1}],
     "problem_type": "retrieval",
-    "tags": ["swiftui", "scenes"]
+    "tags": ["combine", "subscribers"]
   },
   {
-    "id": "swiftui-004",
-    "question": "Which platforms does SwiftUI support?",
-    "expected_answer_keywords": ["ios", "macos"],
-    "expected_sources": [{"document": "SwiftUI _ Apple Developer Documentation.pdf", "page": 4}],
+    "id": "combine-004",
+    "question": "What are the benefits of adopting Combine in your code?",
+    "expected_answer_keywords": ["easier to read", "maintain"],
+    "expected_sources": [{"document": "Combine | Apple Developer Documentation.pdf", "page": 2}],
     "problem_type": "answer_quality",
-    "tags": ["swiftui", "platforms"]
+    "tags": ["combine", "framework-overview"]
   },
   {
-    "id": "core-graphics-001",
-    "question": "What is the Core Graphics framework based on?",
-    "expected_answer_keywords": ["quartz", "drawing engine"],
-    "expected_sources": [{"document": "Core Graphics _ Apple Developer Documentation.pdf", "page": 1}],
+    "id": "combine-005",
+    "question": "What is AnyPublisher in Combine?",
+    "expected_answer_keywords": ["type erasure", "wrapping"],
+    "expected_sources": [{"document": "Combine | Apple Developer Documentation.pdf", "page": 2}],
     "problem_type": "retrieval",
-    "tags": ["core-graphics", "framework-overview"]
+    "tags": ["combine", "publishers"]
   },
   {
-    "id": "core-graphics-002",
-    "question": "What kind of rendering does Core Graphics provide?",
-    "expected_answer_keywords": ["2d", "rendering"],
-    "expected_sources": [{"document": "Core Graphics _ Apple Developer Documentation.pdf", "page": 1}],
+    "id": "combine-006",
+    "question": "What does the Future class do in Combine?",
+    "expected_answer_keywords": ["single value", "finishes", "fails"],
+    "expected_sources": [{"document": "Combine | Apple Developer Documentation.pdf", "page": 3}],
     "problem_type": "answer_quality",
-    "tags": ["core-graphics", "rendering"]
+    "tags": ["combine", "publishers"]
   },
   {
-    "id": "core-graphics-003",
-    "question": "What does CGImage represent?",
-    "expected_answer_keywords": ["bitmap image", "image mask"],
-    "expected_sources": [{"document": "Core Graphics _ Apple Developer Documentation.pdf", "page": 5}],
+    "id": "combine-007",
+    "question": "What does the Subscriber protocol declare?",
+    "expected_answer_keywords": ["receive input", "publisher"],
+    "expected_sources": [{"document": "Combine | Apple Developer Documentation.pdf", "page": 4}],
     "problem_type": "retrieval",
-    "tags": ["core-graphics", "images"]
+    "tags": ["combine", "subscribers"]
   },
   {
-    "id": "core-graphics-004",
-    "question": "What are CGSize and CGRect used for?",
-    "expected_answer_keywords": ["width", "height"],
-    "expected_sources": [{"document": "Core Graphics _ Apple Developer Documentation.pdf", "page": 3}],
+    "id": "combine-008",
+    "question": "What is a CurrentValueSubject in Combine?",
+    "expected_answer_keywords": ["wraps a single value", "publishes a new element"],
+    "expected_sources": [{"document": "Combine | Apple Developer Documentation.pdf", "page": 4}],
     "problem_type": "answer_quality",
-    "tags": ["core-graphics", "geometry"]
+    "tags": ["combine", "subjects"]
   }
 ]

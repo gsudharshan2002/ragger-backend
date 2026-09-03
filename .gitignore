@@ -15,9 +15,10 @@ env/
 .env
 .env.local
 
-# Data
-data/
-uploads/
+# Data - tracked so uploaded documents and eval history go to GitHub,
+# except settings.json which stores live LLM API keys entered via the
+# Settings UI in plaintext and must never be committed.
+app/data/settings.json
 
 # IDE
 .idea/
