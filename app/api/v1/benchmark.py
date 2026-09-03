@@ -12,19 +12,55 @@ from app.services.storage import get_all_datasets
 router = APIRouter()
 
 _DEVELOPER_DOC_RESULTS_DIR = Path(__file__).resolve().parents[3] / "evals" / "results"
+# Points at the two report files from the most recent POST /run, so GET
+# /results can return that exact pair instead of guessing from directory
+# contents (which breaks under concurrent runs or a same-second CLI write
+# into the same directory).
+_LATEST_PAIR_PATH = _DEVELOPER_DOC_RESULTS_DIR / "_latest_pair.json"
+
+
+def _write_pair_pointer(baseline_file: str, improved_file: str) -> None:
+    _DEVELOPER_DOC_RESULTS_DIR.mkdir(exist_ok=True)
+    _LATEST_PAIR_PATH.write_text(
+        json.dumps({"baseline": baseline_file, "improved": improved_file}), encoding="utf-8"
+    )
+
+
+def _read_pair_pointer() -> Optional[dict]:
+    if not _LATEST_PAIR_PATH.exists():
+        return None
+    try:
+        pointer = json.loads(_LATEST_PAIR_PATH.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return None
+
+    data: dict[str, dict] = {}
+    for key in ("baseline", "improved"):
+        filename = pointer.get(key)
+        if not filename:
+            continue
+        try:
+            data[key] = json.loads((_DEVELOPER_DOC_RESULTS_DIR / filename).read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return None  # pointer stale/broken - fall back to the directory heuristic
+    return data or None
 
 
 @router.get("/developer-docs/results")
 async def get_developer_docs_results() -> dict:
     """Return the Week 6 developer-documentation evaluation comparison.
 
-    The eval set and target document are no longer fixed - runs accumulate
-    as separate timestamped files under evals/results/, so this always
-    compares the two most recent runs (whatever cases/document they used)
-    rather than two hardcoded filenames.
+    Prefers the explicit pointer written by the most recent POST /run (see
+    _write_pair_pointer) so the pairing is never guessed. Falls back to the
+    "two most recent files" heuristic only for reports written before the
+    pointer existed, or if the pointer file is missing/corrupt.
     """
     if not _DEVELOPER_DOC_RESULTS_DIR.exists():
         return {"success": True, "data": {}}
+
+    pair = _read_pair_pointer()
+    if pair:
+        return {"success": True, "data": pair}
 
     reports = []
     for report_path in _DEVELOPER_DOC_RESULTS_DIR.glob("*.json"):
@@ -42,6 +78,47 @@ async def get_developer_docs_results() -> dict:
     if len(reports) >= 2:
         data["baseline"] = reports[-2]
     return {"success": True, "data": data}
+
+
+class DeveloperDocsRunRequest(BaseModel):
+    cases: list[dict]
+    baselineStrategy: str = "vector"
+    improvedStrategy: str = "hybrid-rrf"
+    noJudge: bool = False
+    casesFileName: Optional[str] = None
+
+
+@router.post("/developer-docs/run")
+async def run_developer_docs(payload: DeveloperDocsRunRequest) -> dict:
+    """Run the Week 6 developer-documentation eval for two strategies and
+    persist fresh reports so the frontend comparison updates on Refresh.
+
+    The frontend sends:
+      - cases: the test-case JSON array (from the uploaded file)
+      - baselineStrategy / improvedStrategy: which two RagStrategy slugs to compare
+      - noJudge: skip LLM-as-judge (faster, keyword-only scoring)
+      - casesFileName: the uploaded file's name, stored as report metadata
+
+    Returns the two reports it just computed directly (not re-derived from
+    directory contents), so the response always reflects exactly the two
+    strategies this request selected.
+    """
+    from evals.run_developer_docs import run_strategy
+
+    cases_file = payload.casesFileName or "developer_docs_cases.json"
+    label = Path(cases_file).stem
+
+    baseline_report, baseline_path = await run_strategy(
+        payload.cases, payload.baselineStrategy, use_judge=not payload.noJudge,
+        label=label, cases_file=cases_file,
+    )
+    improved_report, improved_path = await run_strategy(
+        payload.cases, payload.improvedStrategy, use_judge=not payload.noJudge,
+        label=label, cases_file=cases_file,
+    )
+    _write_pair_pointer(baseline_path.name, improved_path.name)
+    return {"success": True, "data": {"baseline": baseline_report, "improved": improved_report}}
+
 
 _ALL_METRIC_KEYS = [
     "hitRate", "recall", "precision", "mrr", "ndcg",

@@ -1,0 +1,1005 @@
+{
+  "track": "developer-documentation",
+  "label": "developer_docs_cases",
+  "cases_file": "developer_docs_cases.json",
+  "strategy": "hybrid",
+  "created_at": "2026-09-03T13:25:05.930593+00:00",
+  "summary": {
+    "retrieval_score": 0.8462,
+    "answer_score": 0.7308,
+    "combined_score": 0.7885,
+    "problem_type_scores": {
+      "answer_quality": {
+        "cases": 6,
+        "combined_score": 0.6528
+      },
+      "retrieval": {
+        "cases": 7,
+        "combined_score": 0.9048
+      }
+    }
+  },
+  "results": [
+    {
+      "id": "combine-001",
+      "question": "What does the Combine framework provide?",
+      "problem_type": "answer_quality",
+      "tags": [
+        "combine",
+        "framework-overview"
+      ],
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer correctly states that Combine offers a declarative Swift API for handling values over time.",
+      "combined_score": 1.0,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "0725be3e-f12c-40f7-b124-101a41eaf47f",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "eb603e2c-4ed9-42e6-b039-92056b6c568e",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "b8facd33-692a-4ffd-9f3e-168f3f78d04f",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 2,
+          "section": "Combine",
+          "chunk_id": "2e1daa1b-ece7-4af3-99a3-04b479fc879b",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 5,
+          "section": "Schedulers",
+          "chunk_id": "adc2e3af-3e16-40a0-a2fa-ccd4e3c069a8",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "declarative",
+        "swift api",
+        "values over time"
+      ],
+      "answer": "The Combine framework provides a declarative Swift API for processing values over time, allowing you to work with many kinds of asynchronous events by using publishers to expose changing values and subscribers to receive those values\u202f[Source\u202f1].",
+      "error": ""
+    },
+    {
+      "id": "combine-002",
+      "question": "What does the Publisher protocol declare?",
+      "problem_type": "retrieval",
+      "tags": [
+        "combine",
+        "publishers"
+      ],
+      "status": "failed",
+      "retrieval_score": 1.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": "fail",
+      "judge_reasoning": "The answer does not provide the required information about the Publisher protocol.",
+      "combined_score": 0.5,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 3,
+          "section": "Publishers",
+          "chunk_id": "d9f2ebad-d428-47d1-8da0-12cde93f279a",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 4,
+          "section": "Subscribers",
+          "chunk_id": "ad2ad6a2-e768-43f9-a28f-86929b6041d0",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 6,
+          "section": "Using Combine for Your App\u02bcs Asynchronous Code",
+          "chunk_id": "e1f33e2b-8b41-4e9a-ac31-9f392f45f238",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "f8aa5f53-44af-4282-9763-ee84f213ae70",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 3,
+          "section": "Controlling Publishing with Connectable Publishers",
+          "chunk_id": "71a5e0c9-96df-4809-9d7c-e4e39eebcb38",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "sequence of values",
+        "over time"
+      ],
+      "answer": "I could not find that information in the provided documents.",
+      "error": ""
+    },
+    {
+      "id": "combine-003",
+      "question": "What does a Subscriber do at the end of a chain of publishers?",
+      "problem_type": "retrieval",
+      "tags": [
+        "combine",
+        "subscribers"
+      ],
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 0.5,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer correctly states that a Subscriber receives and acts on elements at the end of the publisher chain, covering the required facts.",
+      "combined_score": 1.0,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "f8aa5f53-44af-4282-9763-ee84f213ae70",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 3,
+          "section": "Controlling Publishing with Connectable Publishers",
+          "chunk_id": "71a5e0c9-96df-4809-9d7c-e4e39eebcb38",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "b8facd33-692a-4ffd-9f3e-168f3f78d04f",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 3,
+          "section": "Publishers",
+          "chunk_id": "d9f2ebad-d428-47d1-8da0-12cde93f279a",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "eb603e2c-4ed9-42e6-b039-92056b6c568e",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "acts on elements",
+        "receives"
+      ],
+      "answer": "A Subscriber\u202facts on the elements it receives, processing them as they arrive at the end of the publisher chain.\u202f[Source\u202f1]",
+      "error": ""
+    },
+    {
+      "id": "combine-004",
+      "question": "What are the benefits of adopting Combine in your code?",
+      "problem_type": "answer_quality",
+      "tags": [
+        "combine",
+        "framework-overview"
+      ],
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer correctly states that Combine improves readability and maintainability by centralizing logic and eliminating nested closures.",
+      "combined_score": 1.0,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 2
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "0725be3e-f12c-40f7-b124-101a41eaf47f",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 2,
+          "section": "Combine",
+          "chunk_id": "2e1daa1b-ece7-4af3-99a3-04b479fc879b",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "eb603e2c-4ed9-42e6-b039-92056b6c568e",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 5,
+          "section": "Schedulers",
+          "chunk_id": "adc2e3af-3e16-40a0-a2fa-ccd4e3c069a8",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "f8aa5f53-44af-4282-9763-ee84f213ae70",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "easier to read",
+        "maintain"
+      ],
+      "answer": "Adopting Combine makes your code easier to read and maintain by centralizing event\u2011processing logic and removing the need for nested closures and convention\u2011based callbacks\u202f[Source\u202f2].",
+      "error": ""
+    },
+    {
+      "id": "combine-005",
+      "question": "What is AnyPublisher in Combine?",
+      "problem_type": "retrieval",
+      "tags": [
+        "combine",
+        "publishers"
+      ],
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 0.5,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer correctly explains that AnyPublisher type\u2011erases a publisher by wrapping it, covering the key facts.",
+      "combined_score": 1.0,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 2
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "eb603e2c-4ed9-42e6-b039-92056b6c568e",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "0725be3e-f12c-40f7-b124-101a41eaf47f",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 2,
+          "section": "Receiving and Handling Events with Combine",
+          "chunk_id": "b466ce24-567f-442d-8453-9eef4bb4d722",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 2,
+          "section": "Combine",
+          "chunk_id": "2e1daa1b-ece7-4af3-99a3-04b479fc879b",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "f8aa5f53-44af-4282-9763-ee84f213ae70",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "type erasure",
+        "wrapping"
+      ],
+      "answer": "AnyPublisher is a struct that type\u2011erases a publisher by wrapping another publisher, providing a generic \u201cany\u201d publisher type.\u202f[Source\u202f3]",
+      "error": ""
+    },
+    {
+      "id": "combine-006",
+      "question": "What does the Future class do in Combine?",
+      "problem_type": "answer_quality",
+      "tags": [
+        "combine",
+        "publishers"
+      ],
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer correctly states that Future publishes a single value and then finishes or fails, covering all key facts.",
+      "combined_score": 1.0,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 3
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "0725be3e-f12c-40f7-b124-101a41eaf47f",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "f8aa5f53-44af-4282-9763-ee84f213ae70",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 2,
+          "section": "Combine",
+          "chunk_id": "2e1daa1b-ece7-4af3-99a3-04b479fc879b",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "eb603e2c-4ed9-42e6-b039-92056b6c568e",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 3,
+          "section": "Receiving and Handling Events with Combine",
+          "chunk_id": "80345848-97d9-4cb7-8eb9-5bdcdbc4df3a",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "single value",
+        "finishes",
+        "fails"
+      ],
+      "answer": "The\u202fFuture\u202fclass is a Combine publisher that eventually produces a single value and then finishes (or fails)\u202f[Source\u202f5].",
+      "error": ""
+    },
+    {
+      "id": "combine-007",
+      "question": "What does the Subscriber protocol declare?",
+      "problem_type": "retrieval",
+      "tags": [
+        "combine",
+        "subscribers"
+      ],
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer correctly states that Subscriber declares a type that can receive input from a publisher, covering the key facts.",
+      "combined_score": 1.0,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 4
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 4,
+          "section": "Subscribers",
+          "chunk_id": "a68a13c0-41b2-4f66-820b-d0638841b05f",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "f8aa5f53-44af-4282-9763-ee84f213ae70",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 3,
+          "section": "Controlling Publishing with Connectable Publishers",
+          "chunk_id": "71a5e0c9-96df-4809-9d7c-e4e39eebcb38",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 4,
+          "section": "Subscribers",
+          "chunk_id": "ad2ad6a2-e768-43f9-a28f-86929b6041d0",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 6,
+          "section": "Using Combine for Your App\u02bcs Asynchronous Code",
+          "chunk_id": "e1f33e2b-8b41-4e9a-ac31-9f392f45f238",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "receive input",
+        "publisher"
+      ],
+      "answer": "The\u202fSubscriber protocol\u202fdeclares a type that can receive input from a publisher.\u202f[Source\u202f3]",
+      "error": ""
+    },
+    {
+      "id": "combine-008",
+      "question": "What is a CurrentValueSubject in Combine?",
+      "problem_type": "answer_quality",
+      "tags": [
+        "combine",
+        "subjects"
+      ],
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": "fail",
+      "judge_reasoning": "The answer does not provide the requested information about CurrentValueSubject.",
+      "combined_score": 0.0,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 4
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "0725be3e-f12c-40f7-b124-101a41eaf47f",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "eb603e2c-4ed9-42e6-b039-92056b6c568e",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "b8facd33-692a-4ffd-9f3e-168f3f78d04f",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 2,
+          "section": "Combine",
+          "chunk_id": "2e1daa1b-ece7-4af3-99a3-04b479fc879b",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "f8aa5f53-44af-4282-9763-ee84f213ae70",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "wraps a single value",
+        "publishes a new element"
+      ],
+      "answer": "I could not find that information in the provided documents.",
+      "error": ""
+    },
+    {
+      "id": "combine-009",
+      "question": "How can values be emitted at regular time intervals without writing a raw timer callback yourself?",
+      "problem_type": "retrieval",
+      "tags": [
+        "combine",
+        "timers",
+        "schedulers"
+      ],
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer correctly identifies Combine\u2019s Timer publisher as the solution and covers all key facts.",
+      "combined_score": 1.0,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 5
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 5,
+          "section": "Schedulers",
+          "chunk_id": "adc2e3af-3e16-40a0-a2fa-ccd4e3c069a8",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "f8aa5f53-44af-4282-9763-ee84f213ae70",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "0725be3e-f12c-40f7-b124-101a41eaf47f",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 4,
+          "section": "Subscribers",
+          "chunk_id": "ad2ad6a2-e768-43f9-a28f-86929b6041d0",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "eb603e2c-4ed9-42e6-b039-92056b6c568e",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "timer",
+        "periodically",
+        "publisher"
+      ],
+      "answer": "You can use Combine\u2019s built\u2011in\u202fTimer\u202fpublisher, which periodically publishes values on a schedule, so you don\u2019t have to write a raw timer callback yourself.\u202f[Source\u202f1]\u202f[Source\u202f2]",
+      "error": ""
+    },
+    {
+      "id": "combine-010",
+      "question": "How can property changes tracked through Objective-C's Key-Value Observing mechanism be turned into a stream of values?",
+      "problem_type": "retrieval",
+      "tags": [
+        "combine",
+        "kvo"
+      ],
+      "status": "failed",
+      "retrieval_score": 1.0,
+      "answer_score": 0.6667,
+      "keyword_answer_score": 0.6667,
+      "judge_verdict": null,
+      "judge_reasoning": "judge call errored: Unterminated string starting at: line 1 column 31 (char 30)",
+      "combined_score": 0.8333,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 5
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 5,
+          "section": "Using Combine for Your App\u02bcs Asynchronous Code",
+          "chunk_id": "07bd3afc-3c2f-4085-8464-3cb87fde2a0f",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "eb603e2c-4ed9-42e6-b039-92056b6c568e",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "f8aa5f53-44af-4282-9763-ee84f213ae70",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 5,
+          "section": "Schedulers",
+          "chunk_id": "adc2e3af-3e16-40a0-a2fa-ccd4e3c069a8",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "0725be3e-f12c-40f7-b124-101a41eaf47f",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "key-value observing",
+        "kvo",
+        "publisher"
+      ],
+      "answer": "You can use Combine\u2019s built\u2011in KVO publisher\u2014Combine provides a publisher for any property that is KVO\u2011compliant, which exposes each change as a stream of values that subscribers can receive.\u202f[Source\u202f2]\u202f[Source\u202f4]",
+      "error": ""
+    },
+    {
+      "id": "combine-011",
+      "question": "How would system notifications be delivered to subscribers instead of using NotificationCenter's traditional observer API directly?",
+      "problem_type": "answer_quality",
+      "tags": [
+        "combine",
+        "notifications"
+      ],
+      "status": "failed",
+      "retrieval_score": 1.0,
+      "answer_score": 0.3333,
+      "keyword_answer_score": 0.3333,
+      "judge_verdict": null,
+      "judge_reasoning": "judge call errored: Expecting value: line 1 column 1 (char 0)",
+      "combined_score": 0.6667,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 5
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 5,
+          "section": "Schedulers",
+          "chunk_id": "adc2e3af-3e16-40a0-a2fa-ccd4e3c069a8",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "f8aa5f53-44af-4282-9763-ee84f213ae70",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "eb603e2c-4ed9-42e6-b039-92056b6c568e",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "0725be3e-f12c-40f7-b124-101a41eaf47f",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 4,
+          "section": "Subscribers",
+          "chunk_id": "a68a13c0-41b2-4f66-820b-d0638841b05f",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "notification center",
+        "publisher",
+        "subscribers"
+      ],
+      "answer": "System notifications can be routed through Combine by using NotificationCenter\u2019s built\u2011in publisher.\u202fInstead of adding an observer with the traditional API, you obtain a publisher (e.g.,\u202f`NotificationCenter.default.publisher(for:\u2026)`) and attach a Combine subscriber to it; the subscriber then receives each notification as a published value\u3010Source\u202f1\u3011. This leverages NotificationCenter\u2019s publisher support documented in Combine\u3010Source\u202f2\u3011.",
+      "error": ""
+    },
+    {
+      "id": "combine-012",
+      "question": "What protocol would you conform to if you needed custom logic for turning Swift values into a serialized data format?",
+      "problem_type": "retrieval",
+      "tags": [
+        "combine",
+        "encoding"
+      ],
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": null,
+      "judge_reasoning": "judge call errored: Expecting value: line 1 column 1 (char 0)",
+      "combined_score": 1.0,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 6
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "0725be3e-f12c-40f7-b124-101a41eaf47f",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "b8facd33-692a-4ffd-9f3e-168f3f78d04f",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 2,
+          "section": "Combine",
+          "chunk_id": "2e1daa1b-ece7-4af3-99a3-04b479fc879b",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "eb603e2c-4ed9-42e6-b039-92056b6c568e",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 6,
+          "section": "Using Combine for Your App\u02bcs Asynchronous Code",
+          "chunk_id": "e1f33e2b-8b41-4e9a-ac31-9f392f45f238",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "encoding",
+        "encoder"
+      ],
+      "answer": "You would conform to the **`TopLevelEncoder`** protocol, which defines the methods for encoding Swift values into a serialized data format\u3010Source 5\u3011.",
+      "error": ""
+    },
+    {
+      "id": "combine-013",
+      "question": "How can a publisher's emitted values be consumed using Swift's async/await syntax instead of its own subscriber APIs?",
+      "problem_type": "answer_quality",
+      "tags": [
+        "combine",
+        "async-await"
+      ],
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.5,
+      "keyword_answer_score": 0.5,
+      "judge_verdict": null,
+      "judge_reasoning": "judge call errored: Expecting value: line 1 column 1 (char 0)",
+      "combined_score": 0.25,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 6
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "0725be3e-f12c-40f7-b124-101a41eaf47f",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 2,
+          "section": "Combine",
+          "chunk_id": "2e1daa1b-ece7-4af3-99a3-04b479fc879b",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "f8aa5f53-44af-4282-9763-ee84f213ae70",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 3,
+          "section": "Receiving and Handling Events with Combine",
+          "chunk_id": "80345848-97d9-4cb7-8eb9-5bdcdbc4df3a",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 5,
+          "section": "Using Combine for Your App\u02bcs Asynchronous Code",
+          "chunk_id": "07bd3afc-3c2f-4085-8464-3cb87fde2a0f",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "asynchronous sequence",
+        "async"
+      ],
+      "answer": "You can consume a publisher\u2019s values with Swift\u2019s\u202fasync/await by using the Combine types that expose the publisher as an async sequence\u2014specifically `AsyncPublisher` (or `AsyncThrowingPublisher`). These structs turn the publisher\u2019s output into an `AsyncSequence`, allowing you to iterate over the emitted values with `for await` instead of implementing a Combine `Subscriber`\u202f[Source\u202f5].",
+      "error": ""
+    }
+  ]
+}
