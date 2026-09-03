@@ -51,7 +51,7 @@ async def judge_answer(question: str, answer: str, expected_keywords: list[str])
             {"role": "user", "content": _judge_user_prompt(question, answer, expected_keywords)},
         ],
         "temperature": 0,
-        "max_tokens": 150,
+        "max_tokens": 300,
     }
 
     try:

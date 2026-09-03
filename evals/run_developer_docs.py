@@ -16,6 +16,19 @@ ROOT = Path(__file__).resolve().parent
 CASES_PATH = ROOT / "developer_docs_cases.json"
 RESULTS_DIR = ROOT / "results"
 
+TAXONOMY_MODES = [
+    "retrieval_failure",
+    "missing_source",
+    "wrong_source",
+    "poor_ranking",
+    "poor_context",
+    "poor_answer",
+    "citation_failure",
+    "latency_failure",
+    "token_limit_failure",
+    "llm_failure",
+    "prompt_issue",
+]
 
 def _value(item: dict[str, Any], *keys: str, default: Any = "") -> Any:
     for key in keys:
@@ -85,6 +98,7 @@ async def _run_case(case: dict[str, Any], strategy: str, use_judge: bool) -> dic
             "id": case["id"],
             "question": case["question"],
             "problem_type": case["problem_type"],
+            "mode": case.get("mode", "unknown"),
             "tags": case.get("tags", []),
             "status": status,
             "retrieval_score": round(retrieval_score, 4),
@@ -106,6 +120,7 @@ async def _run_case(case: dict[str, Any], strategy: str, use_judge: bool) -> dic
             "id": case.get("id", "unknown"),
             "question": case.get("question", ""),
             "problem_type": case.get("problem_type", ""),
+            "mode": case.get("mode", "unknown"),
             "tags": case.get("tags", []),
             "status": "failed",
             "retrieval_score": 0.0,
@@ -128,8 +143,10 @@ def _average(results: list[dict[str, Any]], key: str) -> float:
 
 def _summary(results: list[dict[str, Any]]) -> dict[str, Any]:
     by_type: dict[str, list[dict[str, Any]]] = {}
+    by_mode: dict[str, list[dict[str, Any]]] = {}
     for result in results:
         by_type.setdefault(result["problem_type"], []).append(result)
+        by_mode.setdefault(result.get("mode", "unknown"), []).append(result)
     return {
         "retrieval_score": _average(results, "retrieval_score"),
         "answer_score": _average(results, "answer_score"),
@@ -140,6 +157,14 @@ def _summary(results: list[dict[str, Any]]) -> dict[str, Any]:
                 "combined_score": _average(group, "combined_score"),
             }
             for problem_type, group in sorted(by_type.items())
+        },
+        "mode_scores": {
+            mode: {
+                "cases": len(group),
+                "passed": sum(1 for r in group if r["status"] == "passed"),
+                "pass_rate": round(sum(1 for r in group if r["status"] == "passed") / len(group), 4),
+            }
+            for mode, group in sorted(by_mode.items())
         },
     }
 
@@ -249,6 +274,9 @@ async def main() -> None:
             print(f"{problem_type}_before={previous:.4f}")
             print(f"{problem_type}_after={current['combined_score']:.4f}")
             print(f"{problem_type}_delta={current['combined_score'] - previous:+.4f}")
+    print("\nPass rate by mode:")
+    for mode, stats in report["summary"]["mode_scores"].items():
+        print(f"  {mode}: {stats['passed']}/{stats['cases']} passed ({stats['pass_rate']:.2%})")
 
     print(json.dumps(report["summary"], indent=2))
     print(f"Saved report for strategy={report['strategy']}, label={report['label']}")
