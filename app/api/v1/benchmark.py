@@ -7,9 +7,11 @@ from pydantic import BaseModel
 from typing import Optional
 from uuid import uuid4
 
+from app.core.logging_config import get_logger
 from app.services.storage import get_all_datasets
 
 router = APIRouter()
+logger = get_logger(__name__)
 
 _DEVELOPER_DOC_RESULTS_DIR = Path(__file__).resolve().parents[3] / "evals" / "results"
 # Points at the two report files from the most recent POST /run, so GET
@@ -21,9 +23,15 @@ _LATEST_PAIR_PATH = _DEVELOPER_DOC_RESULTS_DIR / "_latest_pair.json"
 
 def _write_pair_pointer(baseline_file: str, improved_file: str) -> None:
     _DEVELOPER_DOC_RESULTS_DIR.mkdir(exist_ok=True)
-    _LATEST_PAIR_PATH.write_text(
+    # Atomic write (temp file + os.replace) so a reader never sees a
+    # half-written pointer file - a plain write_text() offers no such
+    # guarantee, and would corrupt the pointer if two runs ever wrote it
+    # at the same time.
+    tmp_path = _LATEST_PAIR_PATH.with_suffix(f".{uuid4().hex[:8]}.tmp")
+    tmp_path.write_text(
         json.dumps({"baseline": baseline_file, "improved": improved_file}), encoding="utf-8"
     )
+    tmp_path.replace(_LATEST_PAIR_PATH)
 
 
 def _read_pair_pointer() -> Optional[dict]:
@@ -80,13 +88,33 @@ async def get_developer_docs_results() -> dict:
     return {"success": True, "data": data}
 
 
+class DeveloperDocCase(BaseModel):
+    """A single developer-documentation eval case. `id`/`question`/`problem_type`
+    are accessed unconditionally by evals/run_developer_docs.py's _run_case
+    (after it has already spent a real RAG pipeline call), so validating them
+    here rejects a malformed case with a clear 422 up front instead of a
+    cryptic KeyError string buried in that case's "error" field.
+    """
+
+    id: str
+    question: str
+    problem_type: str
+    mode: str = "unknown"
+    tags: list[str] = []
+    regression: bool = False
+    regression_evidence: Optional[dict] = None
+    expected_sources: list[dict] = []
+    expected_answer_keywords: list[str] = []
+
+
 class DeveloperDocsRunRequest(BaseModel):
-    cases: list[dict]
+    cases: list[DeveloperDocCase]
     baselineStrategy: str = "vector"
     improvedStrategy: str = "hybrid-rrf"
     noJudge: bool = False
     casesFileName: Optional[str] = None
     useRagas: bool = False
+    knowledgeBaseId: Optional[str] = None
 
 
 @router.post("/developer-docs/run")
@@ -101,6 +129,8 @@ async def run_developer_docs(payload: DeveloperDocsRunRequest) -> dict:
       - casesFileName: the uploaded file's name, stored as report metadata
       - useRagas: also compute the bonus faithfulness/context-precision metrics
         (2 extra LLM calls per case per strategy - off by default)
+      - knowledgeBaseId: optional - scope retrieval to one knowledge base, same
+        as Chat does. Omit to search every chunk in the store (prior behavior).
 
     Returns the two reports it just computed directly (not re-derived from
     directory contents), so the response always reflects exactly the two
@@ -111,22 +141,26 @@ async def run_developer_docs(payload: DeveloperDocsRunRequest) -> dict:
     cases_file = payload.casesFileName or "developer_docs_cases.json"
     label = Path(cases_file).stem
 
+    cases = [c.model_dump() for c in payload.cases]
     baseline_report, baseline_path = await run_strategy(
-        payload.cases, payload.baselineStrategy, use_judge=not payload.noJudge,
+        cases, payload.baselineStrategy, use_judge=not payload.noJudge,
         label=label, cases_file=cases_file, use_ragas=payload.useRagas,
+        knowledge_base_id=payload.knowledgeBaseId,
     )
     improved_report, improved_path = await run_strategy(
-        payload.cases, payload.improvedStrategy, use_judge=not payload.noJudge,
+        cases, payload.improvedStrategy, use_judge=not payload.noJudge,
         label=label, cases_file=cases_file, use_ragas=payload.useRagas,
+        knowledge_base_id=payload.knowledgeBaseId,
     )
     _write_pair_pointer(baseline_path.name, improved_path.name)
     return {"success": True, "data": {"baseline": baseline_report, "improved": improved_report}}
 
 
 class GenerateForLabelingRequest(BaseModel):
-    cases: list[dict]
+    cases: list[DeveloperDocCase]
     strategy: str = "bm25"
     casesFileName: Optional[str] = None
+    knowledgeBaseId: Optional[str] = None
 
 
 @router.post("/developer-docs/generate-for-labeling")
@@ -142,7 +176,10 @@ async def generate_for_labeling(payload: GenerateForLabelingRequest) -> dict:
 
     cases_file = payload.casesFileName or "developer_docs_cases.json"
     label = Path(cases_file).stem
-    await run_strategy(payload.cases, payload.strategy, use_judge=False, label=label, cases_file=cases_file)
+    await run_strategy(
+        [c.model_dump() for c in payload.cases], payload.strategy, use_judge=False, label=label,
+        cases_file=cases_file, knowledge_base_id=payload.knowledgeBaseId,
+    )
     return {"success": True, "data": get_label_session()}
 
 
@@ -407,7 +444,7 @@ _EMPTY_METRICS = {
 }
 
 
-async def _execute_case(test_case, strategy, rag_config) -> tuple[dict, Optional[dict]]:
+async def _execute_case(test_case, strategy, rag_config, knowledge_base_id: Optional[str] = None) -> tuple[dict, Optional[dict]]:
     """Run a single golden case through the RAG pipeline and score it.
 
     Returns (case_result, breakdown_metrics) where breakdown_metrics is None
@@ -448,7 +485,7 @@ async def _execute_case(test_case, strategy, rag_config) -> tuple[dict, Optional
         trace = None
         pipeline_error = None
         async for event in execute_rag(
-            test_case.query, strategy, effective_rag_config, None
+            test_case.query, strategy, effective_rag_config, knowledge_base_id
         ):
             if event.get("type") == "llm.token" and "content" in event:
                 answer += event["content"]
@@ -563,7 +600,6 @@ async def _execute_case(test_case, strategy, rag_config) -> tuple[dict, Optional
             "metrics": metrics,
             "failureCategories": failure_categories,
             "failureExplanation": failure_explanation,
-            "latencyMs": int((datetime.now(timezone.utc) - case_started).total_seconds() * 1000),
             "durationMs": int((datetime.now(timezone.utc) - case_started).total_seconds() * 1000),
             "tokenCount": output_tokens,
             "actualPages": sorted({source["page"] for source in actual_sources}),
@@ -586,7 +622,6 @@ async def _execute_case(test_case, strategy, rag_config) -> tuple[dict, Optional
             "metrics": metrics,
             "failureCategories": ["retrieval_failure"],
             "failureExplanation": str(e),
-            "latencyMs": int((datetime.now(timezone.utc) - case_started).total_seconds() * 1000),
             "durationMs": int((datetime.now(timezone.utc) - case_started).total_seconds() * 1000),
             "tokenCount": 0,
             "actualPages": [],
@@ -595,8 +630,13 @@ async def _execute_case(test_case, strategy, rag_config) -> tuple[dict, Optional
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "error": str(e),
         }
-        breakdown_metrics = metrics if getattr(test_case, "expected_sources", None) else None
-        return case_result, breakdown_metrics
+        # Never contribute to difficulty/tag breakdown averages here - an
+        # exception means the pipeline crashed (LLM error, bug, timeout),
+        # not that retrieval genuinely found nothing. Folding this all-zero
+        # `metrics` dict into by_difficulty/by_tag would conflate an
+        # infrastructure failure with a real retrieval-quality failure and
+        # unfairly drag down that bucket's average.
+        return case_result, None
 
 
 def _finalize_run(payload: "BenchmarkRunRequest", dataset, started_at: str, case_results: list[dict], by_difficulty: dict, by_tag: dict) -> dict:
@@ -673,7 +713,9 @@ async def run_benchmark(payload: BenchmarkRunRequest) -> dict:
     by_tag: dict[str, list[dict]] = {}
 
     for test_case in getattr(current_version, "cases", []):
-        case_result, breakdown_metrics = await _execute_case(test_case, strategy, payload.ragConfig)
+        case_result, breakdown_metrics = await _execute_case(
+            test_case, strategy, payload.ragConfig, dataset.knowledge_base_id
+        )
         case_results.append(case_result)
         if breakdown_metrics is not None:
             by_difficulty.setdefault(case_result["difficulty"], []).append(breakdown_metrics)
@@ -715,24 +757,38 @@ async def run_benchmark_stream(payload: BenchmarkRunRequest):
         by_tag: dict[str, list[dict]] = {}
         total = len(cases)
 
-        yield f"data: {json_lib.dumps({'type': 'benchmark.started', 'total': total})}\n\n"
+        try:
+            yield f"data: {json_lib.dumps({'type': 'benchmark.started', 'total': total})}\n\n"
 
-        for index, test_case in enumerate(cases, start=1):
-            yield f"data: {json_lib.dumps({'type': 'case.started', 'index': index, 'total': total, 'caseId': test_case.id, 'query': test_case.query})}\n\n"
+            for index, test_case in enumerate(cases, start=1):
+                yield f"data: {json_lib.dumps({'type': 'case.started', 'index': index, 'total': total, 'caseId': test_case.id, 'query': test_case.query})}\n\n"
 
-            case_result, breakdown_metrics = await _execute_case(test_case, strategy, payload.ragConfig)
-            case_results.append(case_result)
-            if breakdown_metrics is not None:
-                by_difficulty.setdefault(case_result["difficulty"], []).append(breakdown_metrics)
-                for tag in getattr(test_case, "tags", []):
-                    by_tag.setdefault(tag, []).append(breakdown_metrics)
+                case_result, breakdown_metrics = await _execute_case(
+                    test_case, strategy, payload.ragConfig, dataset.knowledge_base_id
+                )
+                case_results.append(case_result)
+                if breakdown_metrics is not None:
+                    by_difficulty.setdefault(case_result["difficulty"], []).append(breakdown_metrics)
+                    for tag in getattr(test_case, "tags", []):
+                        by_tag.setdefault(tag, []).append(breakdown_metrics)
 
-            yield f"data: {json_lib.dumps(jsonable_encoder({'type': 'case.completed', 'index': index, 'total': total, 'result': case_result}))}\n\n"
+                yield f"data: {json_lib.dumps(jsonable_encoder({'type': 'case.completed', 'index': index, 'total': total, 'result': case_result}))}\n\n"
 
-        result = _finalize_run(payload, dataset, started_at, case_results, by_difficulty, by_tag)
-        await add_benchmark_result(result)
+            result = _finalize_run(payload, dataset, started_at, case_results, by_difficulty, by_tag)
+            await add_benchmark_result(result)
 
-        yield f"data: {json_lib.dumps(jsonable_encoder({'type': 'benchmark.completed', 'data': result}))}\n\n"
+            yield f"data: {json_lib.dumps(jsonable_encoder({'type': 'benchmark.completed', 'data': result}))}\n\n"
+        except Exception as e:
+            # _execute_case already catches errors within its own scope, but
+            # _finalize_run, add_benchmark_result, and JSON serialization
+            # itself can all still raise here. Without this, an unhandled
+            # exception crashes the generator and the SSE connection just
+            # drops - no benchmark.completed, no error event - leaving the
+            # frontend stuck showing "running" forever with nothing to
+            # signal that it should stop waiting.
+            logger.error(f"Benchmark stream failed: {e}")
+            yield f"data: {json_lib.dumps({'type': 'error', 'error': str(e)})}\n\n"
+
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(

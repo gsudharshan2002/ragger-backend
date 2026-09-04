@@ -1,0 +1,2270 @@
+{
+  "track": "developer-documentation",
+  "label": "developer_docs_cases",
+  "cases_file": "developer_docs_cases.json",
+  "strategy": "vector",
+  "created_at": "2026-09-04T09:26:23.016369+00:00",
+  "summary": {
+    "retrieval_score": 0.0,
+    "answer_score": 0.0,
+    "combined_score": 0.0,
+    "faithfulness": null,
+    "context_precision": null,
+    "problem_type_scores": {
+      "answer_quality": {
+        "cases": 8,
+        "combined_score": 0.0
+      },
+      "retrieval": {
+        "cases": 18,
+        "combined_score": 0.0
+      }
+    },
+    "mode_scores": {
+      "citation_failure": {
+        "cases": 1,
+        "passed": 0,
+        "pass_rate": 0.0
+      },
+      "missing_source": {
+        "cases": 14,
+        "passed": 0,
+        "pass_rate": 0.0
+      },
+      "poor_answer": {
+        "cases": 6,
+        "passed": 0,
+        "pass_rate": 0.0
+      },
+      "poor_context": {
+        "cases": 1,
+        "passed": 0,
+        "pass_rate": 0.0
+      },
+      "prompt_issue": {
+        "cases": 1,
+        "passed": 0,
+        "pass_rate": 0.0
+      },
+      "wrong_source": {
+        "cases": 3,
+        "passed": 0,
+        "pass_rate": 0.0
+      }
+    }
+  },
+  "results": [
+    {
+      "id": "combine-001",
+      "question": "What does the Combine framework provide?",
+      "problem_type": "answer_quality",
+      "mode": "poor_answer",
+      "tags": [
+        "combine",
+        "framework-overview"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": "fail",
+      "judge_reasoning": "The answer does not address the question or provide the required facts about Combine.",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 3,
+          "section": "Collaborated",
+          "chunk_id": "cd291b10-800c-4673-8845-c7b03bfc0a7f",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "Developer",
+          "chunk_id": "83a310d6-d6a1-4245-9adc-f71da405ef27",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 1,
+          "section": "React",
+          "chunk_id": "ad5465d1-7579-4bd6-859c-543607e7d132",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 3,
+          "section": "Worked",
+          "chunk_id": "efc31990-3f9e-440d-811d-703a5df3a874",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 1,
+          "section": "Native",
+          "chunk_id": "c017c9d7-6c6d-452a-86af-9289a17f6539",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "declarative",
+        "swift api",
+        "values over time"
+      ],
+      "answer": "I couldn't find that information in the provided context.",
+      "error": ""
+    },
+    {
+      "id": "combine-002",
+      "question": "What does the Publisher protocol declare?",
+      "problem_type": "retrieval",
+      "mode": "missing_source",
+      "tags": [
+        "combine",
+        "publishers"
+      ],
+      "regression": true,
+      "regression_evidence": {
+        "report": "20260903T150729_bm25_e3dd9fb0_developer_docs_cases.json",
+        "observed_at": "2026-09-03T15:07:29Z",
+        "observed_retrieval_score": 0,
+        "note": "Expected page 1 was absent from all 5 top-ranked BM25 results once the github-api docs joined the index - a real, reproduced failure, not a hypothetical one."
+      },
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": "fail",
+      "judge_reasoning": "The answer does not address the question or provide the required facts about the Publisher protocol.",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 9,
+          "section": "Implemented",
+          "chunk_id": "44af1bc9-2933-4fde-83a3-d07e1af60510",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 9,
+          "section": "DigiLocker",
+          "chunk_id": "f73d8141-bb1c-4282-b0d1-aad9b0decaab",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "API",
+          "chunk_id": "88756d75-ce70-4a79-b5c4-a560e0075b43",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 3,
+          "section": "Store",
+          "chunk_id": "ce07da33-c195-4f1a-a296-5cbfaa65e8f8",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 4,
+          "section": "Remote",
+          "chunk_id": "397508c1-c890-4091-9c06-d524e422f6dd",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "sequence of values",
+        "over time"
+      ],
+      "answer": "I couldn't find that information in the provided context.",
+      "error": ""
+    },
+    {
+      "id": "combine-003",
+      "question": "What does a Subscriber do at the end of a chain of publishers?",
+      "problem_type": "retrieval",
+      "mode": "missing_source",
+      "tags": [
+        "combine",
+        "subscribers"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": "fail",
+      "judge_reasoning": "The answer does not address the question or provide the required facts about the Subscriber's role.",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 9,
+          "section": "Receive",
+          "chunk_id": "89089fb4-44c6-47f9-b105-b22ac0d030aa",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 6,
+          "section": "Firestore",
+          "chunk_id": "81753e63-3336-4f64-b03c-8dafbfe591d3",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 4,
+          "section": "Remote",
+          "chunk_id": "397508c1-c890-4091-9c06-d524e422f6dd",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 9,
+          "section": "ECS",
+          "chunk_id": "c68183c6-5511-4803-8198-ffe436b3147b",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 9,
+          "section": "Receive",
+          "chunk_id": "855132df-c287-48a2-9940-78bfa35569e9",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "acts on elements",
+        "receives"
+      ],
+      "answer": "I couldn't find that information in the provided context.",
+      "error": ""
+    },
+    {
+      "id": "combine-004",
+      "question": "What are the benefits of adopting Combine in your code?",
+      "problem_type": "answer_quality",
+      "mode": "poor_answer",
+      "tags": [
+        "combine",
+        "framework-overview"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": "fail",
+      "judge_reasoning": "The answer does not address the question or provide the expected benefits.",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 2
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "Developer",
+          "chunk_id": "83a310d6-d6a1-4245-9adc-f71da405ef27",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 3,
+          "section": "Collaborated",
+          "chunk_id": "cd291b10-800c-4673-8845-c7b03bfc0a7f",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 8,
+          "section": "Actions",
+          "chunk_id": "a8459b21-d39a-4bd4-9a33-1b502647df07",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 3,
+          "section": "Worked",
+          "chunk_id": "efc31990-3f9e-440d-811d-703a5df3a874",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 3,
+          "section": "Participated",
+          "chunk_id": "57cfd0ba-8eb0-43c7-9527-216bc7b297c5",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "easier to read",
+        "maintain"
+      ],
+      "answer": "I couldn't find that information in the provided context.",
+      "error": ""
+    },
+    {
+      "id": "combine-005",
+      "question": "What is AnyPublisher in Combine?",
+      "problem_type": "retrieval",
+      "mode": "missing_source",
+      "tags": [
+        "combine",
+        "publishers"
+      ],
+      "regression": true,
+      "regression_evidence": {
+        "report": "20260903T150729_bm25_e3dd9fb0_developer_docs_cases.json",
+        "observed_at": "2026-09-03T15:07:29Z",
+        "observed_retrieval_score": 0,
+        "note": "Expected page 2 was absent from all 5 top-ranked BM25 results once the github-api docs joined the index - a real, reproduced failure, not a hypothetical one."
+      },
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": "fail",
+      "judge_reasoning": "The answer does not explain AnyPublisher or mention type erasure and wrapping.",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 2
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 3,
+          "section": "Collaborated",
+          "chunk_id": "cd291b10-800c-4673-8845-c7b03bfc0a7f",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 7,
+          "section": "Users",
+          "chunk_id": "3251fd8c-cc87-44df-be1a-229d19add0c8",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 3,
+          "section": "Participated",
+          "chunk_id": "57cfd0ba-8eb0-43c7-9527-216bc7b297c5",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 9,
+          "section": "Implemented",
+          "chunk_id": "44af1bc9-2933-4fde-83a3-d07e1af60510",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 3,
+          "section": "Store",
+          "chunk_id": "ce07da33-c195-4f1a-a296-5cbfaa65e8f8",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "type erasure",
+        "wrapping"
+      ],
+      "answer": "I couldn't find that information in the provided context.",
+      "error": ""
+    },
+    {
+      "id": "combine-006",
+      "question": "What does the Future class do in Combine?",
+      "problem_type": "answer_quality",
+      "mode": "poor_answer",
+      "tags": [
+        "combine",
+        "publishers"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": "fail",
+      "judge_reasoning": "The answer does not address the question or provide the required facts about Future.",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 3
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 7,
+          "section": "The",
+          "chunk_id": "bdc2e8f0-07be-4f14-b6a5-bc241ee006c9",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 7,
+          "section": "Each",
+          "chunk_id": "add8db00-d13c-4395-b202-07cd228ac43c",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 3,
+          "section": "Participated",
+          "chunk_id": "57cfd0ba-8eb0-43c7-9527-216bc7b297c5",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "Expo",
+          "chunk_id": "024f524f-9c35-46c5-9b0f-f524d748634c",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 9,
+          "section": "Implemented",
+          "chunk_id": "44af1bc9-2933-4fde-83a3-d07e1af60510",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "single value",
+        "finishes",
+        "fails"
+      ],
+      "answer": "I couldn't find that information in the provided context.",
+      "error": ""
+    },
+    {
+      "id": "combine-007",
+      "question": "What does the Subscriber protocol declare?",
+      "problem_type": "retrieval",
+      "mode": "missing_source",
+      "tags": [
+        "combine",
+        "subscribers"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": "fail",
+      "judge_reasoning": "The answer does not address the question or provide the required facts about the Subscriber protocol.",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 4
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "API",
+          "chunk_id": "88756d75-ce70-4a79-b5c4-a560e0075b43",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 3,
+          "section": "REST",
+          "chunk_id": "1a8612b1-bf9b-4ccd-97fc-437056f453f6",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 4,
+          "section": "Remote",
+          "chunk_id": "7acfe460-94a2-4b59-bd5d-5ae2892ee776",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 3,
+          "section": "Firebase",
+          "chunk_id": "4547469f-3d9d-44b1-a174-32fc58a1d312",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "Socket.io",
+          "chunk_id": "1f22dbc4-8669-4a4f-b6c8-e2924718876a",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "receive input",
+        "publisher"
+      ],
+      "answer": "I couldn't find that information in the provided context.",
+      "error": ""
+    },
+    {
+      "id": "combine-008",
+      "question": "What is a CurrentValueSubject in Combine?",
+      "problem_type": "answer_quality",
+      "mode": "poor_answer",
+      "tags": [
+        "combine",
+        "subjects"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": "fail",
+      "judge_reasoning": "The answer does not explain what a CurrentValueSubject is and omits the required facts.",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 4
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 5,
+          "section": "Config",
+          "chunk_id": "84e9ed18-2d37-4d4c-be4b-59bf62a91085",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "React",
+          "chunk_id": "57b35e3c-8062-4dc1-822a-a4654dc3e8fe",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 1,
+          "section": "React",
+          "chunk_id": "ad5465d1-7579-4bd6-859c-543607e7d132",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 7,
+          "section": "The",
+          "chunk_id": "bdc2e8f0-07be-4f14-b6a5-bc241ee006c9",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 5,
+          "section": "Crashlytics",
+          "chunk_id": "56e1ff9f-45f7-43cb-94e1-55d329884399",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "wraps a single value",
+        "publishes a new element"
+      ],
+      "answer": "I couldn't find that information in the provided context.",
+      "error": ""
+    },
+    {
+      "id": "combine-009",
+      "question": "How can values be emitted at regular time intervals without writing a raw timer callback yourself?",
+      "problem_type": "retrieval",
+      "mode": "missing_source",
+      "tags": [
+        "combine",
+        "timers",
+        "schedulers"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": null,
+      "judge_reasoning": "judge call failed (429)",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 5
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 7,
+          "section": "Each",
+          "chunk_id": "add8db00-d13c-4395-b202-07cd228ac43c",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "APIs",
+          "chunk_id": "d3face70-88c0-43fc-a1ba-6e62eb1ea057",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 5,
+          "section": "Functions",
+          "chunk_id": "82ad1d3c-b229-4c10-886c-b4183aad96fb",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 7,
+          "section": "Socket.io",
+          "chunk_id": "0577d825-7a1f-4150-8898-fa6fe037846b",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 1,
+          "section": "APNs",
+          "chunk_id": "99f504d2-887d-48f1-9c0d-f19166e2595c",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "timer",
+        "periodically",
+        "publisher"
+      ],
+      "answer": "I couldn't find that information in the provided context.",
+      "error": ""
+    },
+    {
+      "id": "combine-010",
+      "question": "How can property changes tracked through Objective-C's Key-Value Observing mechanism be turned into a stream of values?",
+      "problem_type": "retrieval",
+      "mode": "missing_source",
+      "tags": [
+        "combine",
+        "kvo"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": null,
+      "judge_reasoning": "judge call failed (429)",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 5
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "Designed",
+          "chunk_id": "021a8dcc-3159-4f30-80c9-c754ea18e48c",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 3,
+          "section": "Android",
+          "chunk_id": "d5b436ad-c846-449b-ab37-69b64f4970f2",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 7,
+          "section": "Config",
+          "chunk_id": "4fb5c796-9040-4df3-be24-f1c3a0551a5a",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 6,
+          "section": "Config",
+          "chunk_id": "f514096a-6801-47b6-9b24-bf06417c77eb",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 6,
+          "section": "Android",
+          "chunk_id": "ffa26461-d207-4120-9e1c-cf42f074cd4d",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "key-value observing",
+        "kvo",
+        "publisher"
+      ],
+      "answer": "I couldn't find that information in the provided context.",
+      "error": ""
+    },
+    {
+      "id": "combine-011",
+      "question": "How would system notifications be delivered to subscribers instead of using NotificationCenter's traditional observer API directly?",
+      "problem_type": "answer_quality",
+      "mode": "poor_answer",
+      "tags": [
+        "combine",
+        "notifications"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": null,
+      "judge_reasoning": "judge call failed (429)",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 5
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 6,
+          "section": "Service",
+          "chunk_id": "beed194f-7943-4a75-93eb-4a1201e1cb9f",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 8,
+          "section": "Messaging",
+          "chunk_id": "ad534516-0a36-46d4-96fb-8b22a007e7d2",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 9,
+          "section": "APNs",
+          "chunk_id": "75a574cf-a393-48ac-92e8-c2d2e8a55226",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 1,
+          "section": "APNs",
+          "chunk_id": "99f504d2-887d-48f1-9c0d-f19166e2595c",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 8,
+          "section": "Store",
+          "chunk_id": "4e31a72f-c557-457b-84f9-612e855251ab",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "notification center",
+        "publisher",
+        "subscribers"
+      ],
+      "answer": "I couldn't find that information in the provided context.",
+      "error": ""
+    },
+    {
+      "id": "combine-012",
+      "question": "What protocol would you conform to if you needed custom logic for turning Swift values into a serialized data format?",
+      "problem_type": "retrieval",
+      "mode": "missing_source",
+      "tags": [
+        "combine",
+        "encoding"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": null,
+      "judge_reasoning": "judge call failed (429)",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 6
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "API",
+          "chunk_id": "88756d75-ce70-4a79-b5c4-a560e0075b43",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 4,
+          "section": "Remote",
+          "chunk_id": "7acfe460-94a2-4b59-bd5d-5ae2892ee776",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 5,
+          "section": "Functions",
+          "chunk_id": "82ad1d3c-b229-4c10-886c-b4183aad96fb",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 3,
+          "section": "Firebase",
+          "chunk_id": "4547469f-3d9d-44b1-a174-32fc58a1d312",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 6,
+          "section": "Service",
+          "chunk_id": "beed194f-7943-4a75-93eb-4a1201e1cb9f",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "encoding",
+        "encoder"
+      ],
+      "answer": "I couldn't find that information in the provided context.",
+      "error": ""
+    },
+    {
+      "id": "combine-013",
+      "question": "How can a publisher's emitted values be consumed using Swift's async/await syntax instead of its own subscriber APIs?",
+      "problem_type": "answer_quality",
+      "mode": "poor_answer",
+      "tags": [
+        "combine",
+        "async-await"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": null,
+      "judge_reasoning": "judge call failed (429)",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 6
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 8,
+          "section": "Store",
+          "chunk_id": "4e31a72f-c557-457b-84f9-612e855251ab",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 8,
+          "section": "Messaging",
+          "chunk_id": "ad534516-0a36-46d4-96fb-8b22a007e7d2",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "APIs",
+          "chunk_id": "d3face70-88c0-43fc-a1ba-6e62eb1ea057",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 6,
+          "section": "Service",
+          "chunk_id": "beed194f-7943-4a75-93eb-4a1201e1cb9f",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 4,
+          "section": "Remote",
+          "chunk_id": "7acfe460-94a2-4b59-bd5d-5ae2892ee776",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "asynchronous sequence",
+        "async"
+      ],
+      "answer": "I couldn't find that information in the provided context.",
+      "error": ""
+    },
+    {
+      "id": "gh-001",
+      "question": "In the current GitHub API version, what field should you read to get your core rate limit information?",
+      "problem_type": "retrieval",
+      "mode": "missing_source",
+      "tags": [
+        "github-api",
+        "rate-limit",
+        "current-version"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": null,
+      "judge_reasoning": "judge call failed (429)",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "current-version.md",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "Git",
+          "chunk_id": "5c135701-1ef3-411a-a6c9-9fda4b5775ee",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 6,
+          "section": "Android",
+          "chunk_id": "ffa26461-d207-4120-9e1c-cf42f074cd4d",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 8,
+          "section": "Actions",
+          "chunk_id": "a8459b21-d39a-4bd4-9a33-1b502647df07",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 1,
+          "section": "Experienced",
+          "chunk_id": "b1a3e098-939d-4736-8b62-fd473ffe8143",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 3,
+          "section": "Android",
+          "chunk_id": "d5b436ad-c846-449b-ab37-69b64f4970f2",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "resources.core",
+        "core"
+      ],
+      "answer": "I couldn't find that information in the provided context.",
+      "error": ""
+    },
+    {
+      "id": "gh-002",
+      "question": "Using API Version 2026-03-10, does the GET /rate_limit response still include a top-level rate field?",
+      "problem_type": "retrieval",
+      "mode": "wrong_source",
+      "tags": [
+        "github-api",
+        "rate-limit",
+        "version-confusion"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": null,
+      "judge_reasoning": "judge call failed (429)",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "current-version.md",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "API",
+          "chunk_id": "88756d75-ce70-4a79-b5c4-a560e0075b43",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "API",
+          "chunk_id": "7b73c233-f23d-4ea7-9d45-163d2e421159",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 1,
+          "section": "API",
+          "chunk_id": "e113dee4-2814-4c95-b69a-5b34bbcdfb81",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 7,
+          "section": "APIs",
+          "chunk_id": "efa679a6-766d-4ae0-9bd6-5e6654966d60",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 5,
+          "section": "APIs",
+          "chunk_id": "babd3fb1-3d03-42c3-963c-27d03cb3cd97",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "no",
+        "removed",
+        "resources.core"
+      ],
+      "answer": "I couldn't find that information in the provided context.",
+      "error": ""
+    },
+    {
+      "id": "gh-003",
+      "question": "If my integration currently reads the top-level rate field from /rate_limit, what should I change to keep working on the current API version?",
+      "problem_type": "answer_quality",
+      "mode": "citation_failure",
+      "tags": [
+        "github-api",
+        "rate-limit",
+        "migration"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": null,
+      "judge_reasoning": "judge call failed (429)",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "current-version.md",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "API",
+          "chunk_id": "7b73c233-f23d-4ea7-9d45-163d2e421159",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "APIs",
+          "chunk_id": "d3face70-88c0-43fc-a1ba-6e62eb1ea057",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "API",
+          "chunk_id": "88756d75-ce70-4a79-b5c4-a560e0075b43",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 7,
+          "section": "APIs",
+          "chunk_id": "efa679a6-766d-4ae0-9bd6-5e6654966d60",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 1,
+          "section": "API",
+          "chunk_id": "e113dee4-2814-4c95-b69a-5b34bbcdfb81",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "resources.core",
+        "migrat"
+      ],
+      "answer": "I couldn't find that information in the provided context.",
+      "error": ""
+    },
+    {
+      "id": "gh-004",
+      "question": "On the current API version, what value does a submodule entry report for its type field when listing repository contents?",
+      "problem_type": "retrieval",
+      "mode": "missing_source",
+      "tags": [
+        "github-api",
+        "contents",
+        "current-version"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": null,
+      "judge_reasoning": "judge call failed (429)",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "current-version.md",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "API",
+          "chunk_id": "88756d75-ce70-4a79-b5c4-a560e0075b43",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 5,
+          "section": "APIs",
+          "chunk_id": "babd3fb1-3d03-42c3-963c-27d03cb3cd97",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 5,
+          "section": "Native",
+          "chunk_id": "954318a7-bb4d-4e73-9e8a-8794f7e33c38",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 3,
+          "section": "Participated",
+          "chunk_id": "57cfd0ba-8eb0-43c7-9527-216bc7b297c5",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 9,
+          "section": "Access",
+          "chunk_id": "4780387f-e7d5-4668-b371-addaaef203ed",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "submodule"
+      ],
+      "answer": "I couldn't find that information in the provided context.",
+      "error": ""
+    },
+    {
+      "id": "gh-005",
+      "question": "On API Version 2022-11-28, what type value does a submodule entry report when listing repository contents?",
+      "problem_type": "retrieval",
+      "mode": "wrong_source",
+      "tags": [
+        "github-api",
+        "contents",
+        "version-confusion"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": null,
+      "judge_reasoning": "judge call failed (429)",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "old-version.md",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "API",
+          "chunk_id": "88756d75-ce70-4a79-b5c4-a560e0075b43",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 5,
+          "section": "APIs",
+          "chunk_id": "babd3fb1-3d03-42c3-963c-27d03cb3cd97",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 3,
+          "section": "REST",
+          "chunk_id": "1a8612b1-bf9b-4ccd-97fc-437056f453f6",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 3,
+          "section": "Participated",
+          "chunk_id": "57cfd0ba-8eb0-43c7-9527-216bc7b297c5",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "API",
+          "chunk_id": "7b73c233-f23d-4ea7-9d45-163d2e421159",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "file"
+      ],
+      "answer": "I couldn't find that information in the provided context.",
+      "error": ""
+    },
+    {
+      "id": "gh-006",
+      "question": "Does the current version of GET /repos/{owner}/{repo} still include a has_downloads field?",
+      "problem_type": "retrieval",
+      "mode": "missing_source",
+      "tags": [
+        "github-api",
+        "repos",
+        "current-version"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": null,
+      "judge_reasoning": "judge call failed (429)",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "current-version.md",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "Git",
+          "chunk_id": "5c135701-1ef3-411a-a6c9-9fda4b5775ee",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 8,
+          "section": "Actions",
+          "chunk_id": "a8459b21-d39a-4bd4-9a33-1b502647df07",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 6,
+          "section": "Android",
+          "chunk_id": "ffa26461-d207-4120-9e1c-cf42f074cd4d",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 6,
+          "section": "Store",
+          "chunk_id": "2ce0f8c6-fb88-4eca-8432-63dc5cf7fe76",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 3,
+          "section": "Store",
+          "chunk_id": "ce07da33-c195-4f1a-a296-5cbfaa65e8f8",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "no",
+        "removed"
+      ],
+      "answer": "I couldn't find that information in the provided context.",
+      "error": ""
+    },
+    {
+      "id": "gh-007",
+      "question": "My code reads pull_request.merge_commit_sha after a merge completes. Will that still work on the current API version, and if not what should I do instead?",
+      "problem_type": "answer_quality",
+      "mode": "prompt_issue",
+      "tags": [
+        "github-api",
+        "pulls",
+        "migration"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": null,
+      "judge_reasoning": "judge call failed (429)",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "current-version.md",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "APIs",
+          "chunk_id": "d3face70-88c0-43fc-a1ba-6e62eb1ea057",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "Developer",
+          "chunk_id": "83a310d6-d6a1-4245-9adc-f71da405ef27",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 3,
+          "section": "Collaborated",
+          "chunk_id": "cd291b10-800c-4673-8845-c7b03bfc0a7f",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 3,
+          "section": "Android",
+          "chunk_id": "d5b436ad-c846-449b-ab37-69b64f4970f2",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 8,
+          "section": "Android",
+          "chunk_id": "5bed6978-24c9-4be5-896d-67b624d51a74",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "removed",
+        "commit history"
+      ],
+      "answer": "I couldn't find that information in the provided context.",
+      "error": ""
+    },
+    {
+      "id": "gh-008",
+      "question": "On the current API version, how should you read the assigned users of an issue instead of the old singular assignee field?",
+      "problem_type": "retrieval",
+      "mode": "missing_source",
+      "tags": [
+        "github-api",
+        "issues",
+        "current-version"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": null,
+      "judge_reasoning": "judge call failed (429)",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "current-version.md",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "API",
+          "chunk_id": "88756d75-ce70-4a79-b5c4-a560e0075b43",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 7,
+          "section": "Users",
+          "chunk_id": "3251fd8c-cc87-44df-be1a-229d19add0c8",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "API",
+          "chunk_id": "0f66d8a3-be90-44de-ad96-8205bb1038b2",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 5,
+          "section": "APIs",
+          "chunk_id": "babd3fb1-3d03-42c3-963c-27d03cb3cd97",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 6,
+          "section": "Firestore",
+          "chunk_id": "81753e63-3336-4f64-b03c-8dafbfe591d3",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "assignees"
+      ],
+      "answer": "I couldn't find that information in the provided context.",
+      "error": ""
+    },
+    {
+      "id": "gh-009",
+      "question": "What HTTP status code does the current API version return on a successful workflow dispatch request, and what is in the response body?",
+      "problem_type": "retrieval",
+      "mode": "missing_source",
+      "tags": [
+        "github-api",
+        "actions",
+        "current-version"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": null,
+      "judge_reasoning": "judge call failed (429)",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "current-version.md",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "API",
+          "chunk_id": "88756d75-ce70-4a79-b5c4-a560e0075b43",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "APIs",
+          "chunk_id": "d3face70-88c0-43fc-a1ba-6e62eb1ea057",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 5,
+          "section": "APIs",
+          "chunk_id": "babd3fb1-3d03-42c3-963c-27d03cb3cd97",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 1,
+          "section": "Socket.io",
+          "chunk_id": "cf2f9a34-2a84-40f9-a158-f67a8d8613e3",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "API",
+          "chunk_id": "7b73c233-f23d-4ea7-9d45-163d2e421159",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "200",
+        "workflow run"
+      ],
+      "answer": "I couldn't find that information in the provided context.",
+      "error": ""
+    },
+    {
+      "id": "gh-010",
+      "question": "Using API Version 2022-11-28, what status code is returned by a successful workflow dispatch request?",
+      "problem_type": "retrieval",
+      "mode": "wrong_source",
+      "tags": [
+        "github-api",
+        "actions",
+        "version-confusion"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": null,
+      "judge_reasoning": "judge call failed (429)",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "old-version.md",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "API",
+          "chunk_id": "88756d75-ce70-4a79-b5c4-a560e0075b43",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "APIs",
+          "chunk_id": "d3face70-88c0-43fc-a1ba-6e62eb1ea057",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 5,
+          "section": "APIs",
+          "chunk_id": "babd3fb1-3d03-42c3-963c-27d03cb3cd97",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 6,
+          "section": "Service",
+          "chunk_id": "beed194f-7943-4a75-93eb-4a1201e1cb9f",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 9,
+          "section": "Implemented",
+          "chunk_id": "44af1bc9-2933-4fde-83a3-d07e1af60510",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "204"
+      ],
+      "answer": "I couldn't find that information in the provided context.",
+      "error": ""
+    },
+    {
+      "id": "gh-011",
+      "question": "On the current API version, what status code does deleting a GitHub App installation return?",
+      "problem_type": "retrieval",
+      "mode": "missing_source",
+      "tags": [
+        "github-api",
+        "apps",
+        "current-version"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": null,
+      "judge_reasoning": "judge call failed (429)",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "current-version.md",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 8,
+          "section": "Actions",
+          "chunk_id": "a8459b21-d39a-4bd4-9a33-1b502647df07",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 3,
+          "section": "Codemagic",
+          "chunk_id": "b385d1e8-53db-4ba5-b3e1-5dcd7705946d",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "Git",
+          "chunk_id": "5c135701-1ef3-411a-a6c9-9fda4b5775ee",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 1,
+          "section": "Experienced",
+          "chunk_id": "b1a3e098-939d-4736-8b62-fd473ffe8143",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 3,
+          "section": "Android",
+          "chunk_id": "d5b436ad-c846-449b-ab37-69b64f4970f2",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "202"
+      ],
+      "answer": "I couldn't find that information in the provided context.",
+      "error": ""
+    },
+    {
+      "id": "gh-012",
+      "question": "On the current API version, how are JavaScript and TypeScript represented in the code scanning default setup languages list?",
+      "problem_type": "retrieval",
+      "mode": "missing_source",
+      "tags": [
+        "github-api",
+        "code-scanning",
+        "current-version"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": null,
+      "judge_reasoning": "judge call failed (429)",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "current-version.md",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 5,
+          "section": "Native",
+          "chunk_id": "954318a7-bb4d-4e73-9e8a-8794f7e33c38",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "Native",
+          "chunk_id": "5622ad51-0112-4318-ba49-0c2e6158b241",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 3,
+          "section": "REST",
+          "chunk_id": "3607e879-6130-42bb-96eb-92bc777ea21f",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 1,
+          "section": "Native",
+          "chunk_id": "c017c9d7-6c6d-452a-86af-9289a17f6539",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 9,
+          "section": "UI/UX",
+          "chunk_id": "29f7a9c0-44c0-4ef8-8879-81b5848e0160",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "javascript-typescript"
+      ],
+      "answer": "I couldn't find that information in the provided context.",
+      "error": ""
+    },
+    {
+      "id": "gh-013",
+      "question": "What changed about attestation list responses between API Version 2022-11-28 and 2026-03-10?",
+      "problem_type": "retrieval",
+      "mode": "poor_context",
+      "tags": [
+        "github-api",
+        "attestations",
+        "comparison"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": null,
+      "judge_reasoning": "judge call failed (429)",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "old-version.md",
+          "page": 1
+        },
+        {
+          "document": "current-version.md",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 2,
+          "section": "API",
+          "chunk_id": "88756d75-ce70-4a79-b5c4-a560e0075b43",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 6,
+          "section": "Android",
+          "chunk_id": "67c1a791-ea8e-4e4b-a3b2-cd7394170b93",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 3,
+          "section": "Android",
+          "chunk_id": "d5b436ad-c846-449b-ab37-69b64f4970f2",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 6,
+          "section": "Android",
+          "chunk_id": "ffa26461-d207-4120-9e1c-cf42f074cd4d",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "077beb34-aaa5-4ea8-a4b4-98f7f6c8425b",
+          "document_name": "Midhun React Native 4+.pdf",
+          "page": 1,
+          "section": "Experienced",
+          "chunk_id": "b1a3e098-939d-4736-8b62-fd473ffe8143",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "bundle",
+        "bundle_url"
+      ],
+      "answer": "I couldn't find that information in the provided context.",
+      "error": ""
+    }
+  ]
+}

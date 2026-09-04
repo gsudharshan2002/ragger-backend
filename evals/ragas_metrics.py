@@ -48,15 +48,15 @@ _CONTEXT_PRECISION_PROMPT = (
 )
 
 
+_SOURCE_BLOCK_RE = re.compile(r'<source id="\d+">.*?</source>', re.DOTALL)
+
+
 def split_context_chunks(context: str) -> list[str]:
-    """Split the pipeline's built <context> block back into one string per
-    retrieved chunk, in ranked order - reversing the "[Source N] ..." join
-    done when the prompt was built (see rag_engine.py's prompt builder)."""
-    inner = context.removeprefix("<context>").removesuffix("</context>").strip()
-    if not inner:
-        return []
-    parts = re.split(r"\n\n(?=\[Source \d+\])", inner)
-    return [p.strip() for p in parts if p.strip()]
+    """Split the pipeline's built <retrieved_context> block back into one
+    string per retrieved chunk, in ranked order - reversing the
+    <source id="N">...</source> join done when the prompt was built (see
+    rag_engine.py's build_prompt)."""
+    return [m.group(0).strip() for m in _SOURCE_BLOCK_RE.finditer(context)]
 
 
 async def _call_metrics_llm(system_prompt: str, user_prompt: str) -> dict[str, Any] | None:

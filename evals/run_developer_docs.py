@@ -70,13 +70,19 @@ def _answer_score(answer: str, keywords: list[str]) -> float:
     return sum(keyword.lower() in lowered for keyword in keywords) / len(keywords)
 
 
-async def _run_case(case: dict[str, Any], strategy: str, use_judge: bool, use_ragas: bool = False) -> dict[str, Any]:
+async def _run_case(
+    case: dict[str, Any],
+    strategy: str,
+    use_judge: bool,
+    use_ragas: bool = False,
+    knowledge_base_id: str | None = None,
+) -> dict[str, Any]:
     try:
         answer = ""
         trace: dict[str, Any] | None = None
         error = ""
 
-        async for event in execute_rag(case["question"], RagStrategy(strategy), None, None):
+        async for event in execute_rag(case["question"], RagStrategy(strategy), None, knowledge_base_id):
             event_type = event.get("type")
             if event_type == "llm.token":
                 answer += event.get("content", "")
@@ -262,6 +268,12 @@ def _parse_args() -> argparse.Namespace:
         help="Also compute the bonus RAGAS-style faithfulness and context precision "
         "metrics for every case (2 extra LLM calls per case - off by default).",
     )
+    parser.add_argument(
+        "--knowledge-base-id",
+        default=None,
+        help="Optional - scope retrieval to one knowledge base, same as Chat does. "
+        "Omit to search every chunk in the store (prior behavior, unchanged).",
+    )
     return parser.parse_args()
 
 
@@ -290,6 +302,7 @@ async def run_strategy(
     label: str | None = None,
     cases_file: str | None = None,
     use_ragas: bool = False,
+    knowledge_base_id: str | None = None,
 ) -> tuple[dict[str, Any], Path]:
     """Run the developer-documentation eval set through a single retrieval
     strategy and persist a timestamped report to evals/results/.
@@ -302,6 +315,10 @@ async def run_strategy(
     (evals/ragas_metrics.py) - off by default since each case costs 2 extra
     LLM calls.
 
+    `knowledge_base_id` is optional - when omitted (the default, matching
+    prior behavior), retrieval searches every chunk in the store. Set it to
+    scope retrieval to one knowledge base, same as Chat already does.
+
     Returns (report dict, path the report was written to). Reused by the CLI
     (main) and the API endpoint that powers the Week 6 Refresh button so both
     produce identical reports.
@@ -309,7 +326,7 @@ async def run_strategy(
     cases_file_name = cases_file or CASES_PATH.name
     labels = label or Path(cases_file_name).stem
     RESULTS_DIR.mkdir(exist_ok=True)
-    results = [await _run_case(case, strategy, use_judge, use_ragas) for case in cases]
+    results = [await _run_case(case, strategy, use_judge, use_ragas, knowledge_base_id) for case in cases]
     created_at = datetime.now(UTC)
     report = {
         "track": "developer-documentation",
@@ -337,7 +354,8 @@ async def main() -> None:
 
     use_judge = not args.no_judge
     report, _ = await run_strategy(
-        cases, args.strategy, use_judge, label, cases_file=cases_path.name, use_ragas=args.ragas
+        cases, args.strategy, use_judge, label, cases_file=cases_path.name,
+        use_ragas=args.ragas, knowledge_base_id=args.knowledge_base_id,
     )
 
     if previous_run:

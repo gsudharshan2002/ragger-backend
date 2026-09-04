@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 import shutil
+import tempfile
 from datetime import datetime, timezone
 from typing import Optional
 from uuid import uuid4
@@ -31,6 +32,28 @@ _kb_cache: dict[str, KnowledgeBase] = {}
 _dataset_cache: dict[str, Dataset] = {}
 
 _initialized = False
+
+
+def _atomic_write_json(path: str, data) -> None:
+    """Write JSON to `path` atomically: serialize to a temp file in the
+    same directory, then os.replace() it into place. A reader always sees
+    either the complete old file or the complete new one, never a
+    half-written file from an interrupted or concurrently-racing write -
+    the plain open(path, "w") this replaces offered no such guarantee, and
+    would corrupt the file if two processes (e.g. multiple server workers)
+    ever wrote it at the same time."""
+    directory = os.path.dirname(path) or "."
+    fd, tmp_path = tempfile.mkstemp(dir=directory, prefix=".tmp-", suffix=".json")
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump(data, f, default=str)
+        os.replace(tmp_path, path)
+    except BaseException:
+        try:
+            os.remove(tmp_path)
+        except OSError:
+            pass
+        raise
 
 
 async def _ensure_dirs():
@@ -94,26 +117,22 @@ async def _load_all():
 
 async def _save_chunks():
     chunks_file = os.path.join(CHUNKS_DIR, "chunks.json")
-    with open(chunks_file, "w") as f:
-        json.dump([c.model_dump() for c in _chunks_cache], f, default=str)
+    _atomic_write_json(chunks_file, [c.model_dump() for c in _chunks_cache])
 
 
 async def _save_documents():
     docs_file = os.path.join(DOCUMENTS_DIR, "documents.json")
-    with open(docs_file, "w") as f:
-        json.dump([d.model_dump() for d in _documents_cache.values()], f, default=str)
+    _atomic_write_json(docs_file, [d.model_dump() for d in _documents_cache.values()])
 
 
 async def _save_kbs():
     kb_file = os.path.join(KB_DIR, "knowledge_bases.json")
-    with open(kb_file, "w") as f:
-        json.dump([k.model_dump() for k in _kb_cache.values()], f, default=str)
+    _atomic_write_json(kb_file, [k.model_dump() for k in _kb_cache.values()])
 
 
 async def _save_datasets():
     ds_file = os.path.join(DATASETS_DIR, "datasets.json")
-    with open(ds_file, "w") as f:
-        json.dump([d.model_dump() for d in _dataset_cache.values()], f, default=str)
+    _atomic_write_json(ds_file, [d.model_dump() for d in _dataset_cache.values()])
 
 
 async def get_all_chunks() -> list[StoredChunk]:
@@ -333,8 +352,7 @@ async def update_settings(updates: dict) -> dict:
     current = await get_settings()
     current.update(updates)
     _settings_cache = current
-    with open(SETTINGS_FILE, "w") as f:
-        json.dump(current, f, default=str)
+    _atomic_write_json(SETTINGS_FILE, current)
     return current
 
 
@@ -358,8 +376,7 @@ async def _load_traces():
 
 
 async def _save_traces():
-    with open(TRACES_FILE, "w") as f:
-        json.dump(_traces_cache, f, default=str)
+    _atomic_write_json(TRACES_FILE, _traces_cache)
 
 
 async def list_traces(limit: int = 50) -> list[dict]:
@@ -408,8 +425,7 @@ async def add_document_version(doc_id: str, version: dict) -> dict:
     versions = await get_document_versions(doc_id)
     versions.append(version)
     versions_file = os.path.join(DOCUMENTS_DIR, f"{doc_id}_versions.json")
-    with open(versions_file, "w") as f:
-        json.dump(versions, f, default=str)
+    _atomic_write_json(versions_file, versions)
     return version
 
 
@@ -453,8 +469,7 @@ async def add_processing_history(doc_id: str, event: dict) -> dict:
     history = await get_document_history(doc_id)
     history.append(event)
     history_file = os.path.join(DOCUMENTS_DIR, f"{doc_id}_history.json")
-    with open(history_file, "w") as f:
-        json.dump(history, f, default=str)
+    _atomic_write_json(history_file, history)
     return event
 
 
@@ -478,8 +493,7 @@ async def _load_folders():
 
 
 async def _save_folders():
-    with open(FOLDERS_FILE, "w") as f:
-        json.dump(_folders_cache, f, default=str)
+    _atomic_write_json(FOLDERS_FILE, _folders_cache)
 
 
 async def get_kb_folders(kb_id: str) -> list[dict]:
@@ -522,8 +536,7 @@ async def _load_results():
 
 
 async def _save_results():
-    with open(RESULTS_FILE, "w") as f:
-        json.dump(_results_cache, f, default=str)
+    _atomic_write_json(RESULTS_FILE, _results_cache)
 
 
 async def list_benchmark_results() -> list[dict]:

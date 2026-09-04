@@ -103,9 +103,8 @@ async def run_judge_validation() -> dict[str, Any]:
         case = cases_by_id.get(case_id)
         if not case:
             continue
-        judge_result = await judge_answer(
-            case["question"], case.get("answer", ""), case.get("expected_answer_keywords", [])
-        )
+        expected_keywords = case.get("expected_answer_keywords", [])
+        judge_result = await judge_answer(case["question"], case.get("answer", ""), expected_keywords)
         verdict = judge_result["verdict"]
         comparisons.append({
             "case_id": case_id,
@@ -116,9 +115,18 @@ async def run_judge_validation() -> dict[str, Any]:
             "judge_verdict": verdict,
             "judge_reasoning": judge_result["reasoning"],
             "agree": verdict == human_label,
+            # No keyword checklist to grade against (retrieval-type cases never
+            # get one - see developer_docs_cases.json) means the judge graded
+            # "correct and helpful" with zero grounding. That comparison can't
+            # validate the judge's use of expected_answer_keywords, so it's
+            # tracked separately and excluded from agreement_rate below rather
+            # than silently counted as if it were a grounded comparison.
+            "has_keywords": bool(expected_keywords),
         })
 
-    graded = [c for c in comparisons if c["judge_verdict"] is not None]
+    gradeable = [c for c in comparisons if c["has_keywords"]]
+    ungrounded_count = len(comparisons) - len(gradeable)
+    graded = [c for c in gradeable if c["judge_verdict"] is not None]
     agreement_rate = round(sum(1 for c in graded if c["agree"]) / len(graded), 4) if graded else 0.0
 
     validation = {
@@ -128,7 +136,8 @@ async def run_judge_validation() -> dict[str, Any]:
         "criterion": labels_data["criterion"],
         "agreement_rate": agreement_rate,
         "graded_count": len(graded),
-        "ungraded_count": len(comparisons) - len(graded),
+        "ungraded_count": len(gradeable) - len(graded),
+        "ungrounded_count": ungrounded_count,
         "total_labels": len(comparisons),
         "comparisons": comparisons,
     }
