@@ -12,6 +12,8 @@ Usage:
     uv run python -m evals.label_answers                   # then label them blind
 """
 
+import asyncio
+
 from evals.labeling import LABELS_PATH, get_label_session, save_label
 
 
@@ -31,7 +33,7 @@ def _prompt_label(index: int, total: int, question: str, answer: str) -> str:
         print("Please enter 'p', 'f', or 's'.")
 
 
-def main() -> None:
+async def _main() -> None:
     session = get_label_session()
     if not session["available"]:
         raise SystemExit(
@@ -66,12 +68,16 @@ def main() -> None:
         result = _prompt_label(i, len(cases), case["question"], case["answer"])
         if result == "skip":
             continue
-        data = save_label(session["source_report"], session["source_report_created_at"], case["id"], result)
+        data = await save_label(session["source_report"], session["source_report_created_at"], case["id"], result)
         labels = data["labels"]
 
     print(f"\nSaved {len(labels)} labels to {LABELS_PATH}")
     if len(labels) < 25:
         print(f"Note: only {len(labels)} labels saved so far - the rubric wants 25+.")
+
+
+def main() -> None:
+    asyncio.run(_main())
 
 
 if __name__ == "__main__":

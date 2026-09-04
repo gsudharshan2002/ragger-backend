@@ -21,7 +21,8 @@
       "report": "20260903T150729_bm25_e3dd9fb0_developer_docs_cases.json",
       "observed_at": "2026-09-03T15:07:29Z",
       "observed_retrieval_score": 0.0,
-      "note": "Expected page 1 was absent from all 5 top-ranked BM25 results once the github-api docs joined the index - a real, reproduced failure, not a hypothetical one."
+      "note": "Expected page 1 was absent from all 5 top-ranked BM25 results once the github-api docs joined the index - a real, reproduced failure, not a hypothetical one.",
+      "fixed_in_version": "V3"
     }
   },
   {
@@ -55,7 +56,8 @@
       "report": "20260903T150729_bm25_e3dd9fb0_developer_docs_cases.json",
       "observed_at": "2026-09-03T15:07:29Z",
       "observed_retrieval_score": 0.0,
-      "note": "Expected page 2 was absent from all 5 top-ranked BM25 results once the github-api docs joined the index - a real, reproduced failure, not a hypothetical one."
+      "note": "Expected page 2 was absent from all 5 top-ranked BM25 results once the github-api docs joined the index - a real, reproduced failure, not a hypothetical one.",
+      "fixed_in_version": "V3"
     }
   },
   {

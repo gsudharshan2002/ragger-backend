@@ -12,6 +12,7 @@ from typing import Any
 
 import httpx
 
+from app.core.retry import retry_on_rate_limit
 from app.services.llm import get_api_url, get_persisted_provider_and_keys
 
 _JUDGE_SYSTEM_PROMPT = (
@@ -52,12 +53,17 @@ async def judge_answer(question: str, answer: str, expected_keywords: list[str])
     persisted = await get_settings()
     provider, api_key = get_persisted_provider_and_keys(persisted)
     if not api_key:
-        env_var = "GEMINI_API_KEY" if provider == "gemini" else "GROQ_API_KEY"
+        env_var = {
+            "gemini": "GEMINI_API_KEY",
+            "openrouter": "OPENROUTER_API_KEY",
+        }.get(provider, "GROQ_API_KEY")
         return {"verdict": None, "reasoning": f"{env_var} not set - judge skipped"}
 
-    model = (
-        persisted.get("geminiModel") if provider == "gemini" else persisted.get("groqModel")
-    ) or ""
+    model_key = {
+        "gemini": "geminiModel",
+        "openrouter": "openrouterModel",
+    }.get(provider, "groqModel")
+    model = (persisted.get(model_key) or "") or ""
 
     body = {
         "model": model,
@@ -70,12 +76,20 @@ async def judge_answer(question: str, answer: str, expected_keywords: list[str])
     }
 
     try:
-        async with httpx.AsyncClient(timeout=30) as client:
-            response = await client.post(
-                get_api_url(provider),
-                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-                json=body,
-            )
+        async def _call() -> httpx.Response:
+            async with httpx.AsyncClient(timeout=30) as client:
+                resp = await client.post(
+                    get_api_url(provider),
+                    headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                    json=body,
+                )
+            # Convert a 429 into an exception so retry_on_rate_limit can
+            # back off and retry, honoring Retry-After, before giving up.
+            if resp.status_code == 429:
+                resp.raise_for_status()
+            return resp
+
+        response = await retry_on_rate_limit(_call)
         if not response.is_success:
             return {"verdict": None, "reasoning": f"judge call failed ({response.status_code})"}
 

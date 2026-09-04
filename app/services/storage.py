@@ -324,8 +324,10 @@ async def get_settings() -> dict:
         "llmProvider": settings.LLM_PROVIDER,
         "groqModel": settings.GROQ_MODEL,
         "geminiModel": settings.GEMINI_MODEL,
+        "openrouterModel": settings.OPENROUTER_MODEL,
         "groqApiKey": settings.GROQ_API_KEY,
         "geminiApiKey": settings.GEMINI_API_KEY,
+        "openrouterApiKey": settings.OPENROUTER_API_KEY,
         "embeddingProvider": settings.EMBEDDING_PROVIDER,
         "embeddingModel": settings.EMBEDDING_MODEL,
         "cohereEmbedModel": settings.COHERE_EMBED_MODEL,
@@ -358,15 +360,59 @@ async def update_settings(updates: dict) -> dict:
 
 # ===================== Traces =====================
 TRACES_FILE = os.path.join(DATA_DIR, "traces.json")
+TRACES_JSONL_FILE = os.path.join(DATA_DIR, "traces.jsonl")
 _traces_cache: list[dict] = []
 _traces_loaded = False
+
+
+def _atomic_write_jsonl(path: str, lines: list[str]) -> None:
+    """Write JSONL atomically: lines is a list of already-serialized JSON strings."""
+    directory = os.path.dirname(path) or "."
+    fd, tmp_path = tempfile.mkstemp(dir=directory, prefix=".tmp-", suffix=".jsonl")
+    try:
+        with os.fdopen(fd, "w") as f:
+            for line in lines:
+                f.write(line + "\n")
+        os.replace(tmp_path, path)
+    except BaseException:
+        try:
+            os.remove(tmp_path)
+        except OSError:
+            pass
+        raise
+
+
+def _migrate_json_to_jsonl():
+    """One-time migration: read traces.json, write traces.jsonl, rename
+    the old file to traces.json.bak so it's never read again."""
+    if not os.path.exists(TRACES_FILE) or os.path.exists(TRACES_JSONL_FILE):
+        return
+    try:
+        with open(TRACES_FILE) as f:
+            data = json.load(f)
+        lines = [json.dumps(t, default=str) for t in data]
+        _atomic_write_jsonl(TRACES_JSONL_FILE, lines)
+        os.rename(TRACES_FILE, TRACES_FILE + ".bak")
+    except Exception:
+        pass
 
 
 async def _load_traces():
     global _traces_cache, _traces_loaded
     if _traces_loaded:
         return
-    if os.path.exists(TRACES_FILE):
+    _migrate_json_to_jsonl()
+    if os.path.exists(TRACES_JSONL_FILE):
+        try:
+            _traces_cache = []
+            with open(TRACES_JSONL_FILE) as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        _traces_cache.append(json.loads(line))
+        except Exception:
+            _traces_cache = []
+    elif os.path.exists(TRACES_FILE):
         try:
             with open(TRACES_FILE) as f:
                 _traces_cache = json.load(f)
@@ -376,7 +422,8 @@ async def _load_traces():
 
 
 async def _save_traces():
-    _atomic_write_json(TRACES_FILE, _traces_cache)
+    lines = [json.dumps(t, default=str) for t in _traces_cache]
+    _atomic_write_jsonl(TRACES_JSONL_FILE, lines)
 
 
 async def list_traces(limit: int = 50) -> list[dict]:

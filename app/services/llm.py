@@ -11,6 +11,7 @@ logger = get_logger(__name__)
 
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 DEFAULT_SYSTEM_PROMPT = (
     "You are a RAG assistant. Answer only using the <source> entries inside the "
@@ -73,12 +74,18 @@ async def _open_stream_with_retry(
 def _get_api_key(provider: str) -> Optional[str]:
     if provider == "gemini":
         return settings.GEMINI_API_KEY
+    if provider == "openrouter":
+        return settings.OPENROUTER_API_KEY
     return settings.GROQ_API_KEY
 
 
 def get_api_url(provider: str) -> str:
+    if settings.LLM_API_URL:
+        return settings.LLM_API_URL
     if provider == "gemini":
         return GEMINI_API_URL
+    if provider == "openrouter":
+        return OPENROUTER_API_URL
     return GROQ_API_URL
 
 
@@ -86,6 +93,8 @@ def get_persisted_provider_and_keys(persisted: dict) -> tuple[str, Optional[str]
     provider = persisted.get("llmProvider") or settings.LLM_PROVIDER
     if provider == "gemini":
         api_key = persisted.get("geminiApiKey") or settings.GEMINI_API_KEY
+    elif provider == "openrouter":
+        api_key = persisted.get("openrouterApiKey") or settings.OPENROUTER_API_KEY
     else:
         api_key = persisted.get("groqApiKey") or settings.GROQ_API_KEY
     return provider, api_key
@@ -113,7 +122,10 @@ async def generate_completion_stream(
     provider, api_key = get_persisted_provider_and_keys(persisted)
 
     if not api_key:
-        env_var = "GEMINI_API_KEY" if provider == "gemini" else "GROQ_API_KEY"
+        env_var = {
+            "gemini": "GEMINI_API_KEY",
+            "openrouter": "OPENROUTER_API_KEY",
+        }.get(provider, "GROQ_API_KEY")
         yield {
             "type": "error",
             "error": f"{env_var} is not set. Please add it in Settings or set it in your .env file.",
@@ -123,6 +135,8 @@ async def generate_completion_stream(
     if model is None:
         if provider == "gemini":
             model = persisted.get("geminiModel") or settings.GEMINI_MODEL
+        elif provider == "openrouter":
+            model = persisted.get("openrouterModel") or settings.OPENROUTER_MODEL
         else:
             model = persisted.get("groqModel") or settings.GROQ_MODEL
     messages = [

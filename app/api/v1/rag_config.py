@@ -17,8 +17,10 @@ class SettingsUpdate(BaseModel):
     llmProvider: Optional[str] = None
     groqModel: Optional[str] = None
     geminiModel: Optional[str] = None
+    openrouterModel: Optional[str] = None
     groqApiKey: Optional[str] = None
     geminiApiKey: Optional[str] = None
+    openrouterApiKey: Optional[str] = None
     embeddingProvider: Optional[str] = None
     embeddingModel: Optional[str] = None
     cohereEmbedModel: Optional[str] = None

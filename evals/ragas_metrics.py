@@ -69,7 +69,11 @@ async def _call_metrics_llm(system_prompt: str, user_prompt: str) -> dict[str, A
     provider, api_key = get_persisted_provider_and_keys(persisted)
     if not api_key:
         return None
-    model = (persisted.get("geminiModel") if provider == "gemini" else persisted.get("groqModel")) or ""
+    model_key = {
+        "gemini": "geminiModel",
+        "openrouter": "openrouterModel",
+    }.get(provider, "groqModel")
+    model = (persisted.get(model_key) or "") or ""
 
     body = {
         "model": model,

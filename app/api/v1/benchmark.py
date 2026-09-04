@@ -183,6 +183,20 @@ async def generate_for_labeling(payload: GenerateForLabelingRequest) -> dict:
     return {"success": True, "data": get_label_session()}
 
 
+@router.get("/developer-docs/default-cases")
+async def get_default_cases() -> dict:
+    """Return the built-in developer_docs_cases.json so the frontend
+    can offer a one-click 'Load default cases' button."""
+    from pathlib import Path
+
+    cases_path = Path(__file__).resolve().parents[3] / "evals" / "developer_docs_cases.json"
+    if not cases_path.exists():
+        return {"success": False, "detail": "Default cases file not found"}
+    import json
+    cases = json.loads(cases_path.read_text(encoding="utf-8"))
+    return {"success": True, "data": cases}
+
+
 @router.get("/developer-docs/label-session")
 async def get_label_session_endpoint() -> dict:
     """Everything the labeling UI needs: the latest judge-free report's
@@ -191,6 +205,31 @@ async def get_label_session_endpoint() -> dict:
     from evals.labeling import get_label_session
 
     return {"success": True, "data": get_label_session()}
+
+
+@router.delete("/developer-docs/label-session")
+async def clear_label_session_endpoint() -> dict:
+    """Delete labels_25.json so the user can start fresh with a new
+    generate-for-labeling run against a different report or strategy."""
+    from evals.labeling import LABELS_PATH
+
+    if LABELS_PATH.exists():
+        LABELS_PATH.unlink()
+    return {"success": True}
+
+
+@router.post("/developer-docs/cases/{case_id}/clear-regression")
+async def clear_regression_endpoint(case_id: str) -> dict:
+    """Demote a regression case back to a normal case in
+    developer_docs_cases.json once its hand label turns to pass - strips
+    regression/regression_evidence so the fix is reflected in the source
+    file, not just the current session's view of it."""
+    from evals.labeling import clear_regression_flag
+
+    case = await clear_regression_flag(case_id)
+    if case is None:
+        raise HTTPException(status_code=404, detail=f"Case {case_id!r} not found in developer_docs_cases.json")
+    return {"success": True, "data": case}
 
 
 class LabelRequest(BaseModel):
@@ -210,7 +249,7 @@ async def save_label_endpoint(payload: LabelRequest) -> dict:
     if not report:
         raise HTTPException(status_code=404, detail="No --no-judge report found to label against.")
     try:
-        data = save_label(report["_source_path"], report.get("created_at", ""), payload.case_id, payload.label)
+        data = await save_label(report["_source_path"], report.get("created_at", ""), payload.case_id, payload.label)
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
     return {"success": True, "data": {"labeled_count": len(data["labels"])}}
@@ -229,6 +268,41 @@ async def validate_judge_endpoint() -> dict:
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
     return {"success": True, "data": result}
+
+
+@router.get("/developer-docs/judge-runs")
+async def list_judge_runs() -> dict:
+    """Return every judge-validation run saved under evals/results/, newest
+    first, so the frontend can render prior agreement results on a fresh page
+    load without re-running the judge."""
+    runs = []
+    for path in _DEVELOPER_DOC_RESULTS_DIR.glob("*_judge_validation.json"):
+        try:
+            run = json.loads(path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+        run["_filename"] = path.name
+        runs.append(run)
+    runs.sort(key=lambda r: r.get("validated_at", ""), reverse=True)
+    return {"success": True, "data": runs}
+
+
+@router.delete("/developer-docs/judge-runs/{filename}")
+async def delete_judge_run(filename: str) -> dict:
+    """Delete one saved judge-validation run by filename, or all of them with
+    the special value 'all' (e.g. to reset the agreement panel)."""
+    if filename == "all":
+        deleted = 0
+        for path in _DEVELOPER_DOC_RESULTS_DIR.glob("*_judge_validation.json"):
+            path.unlink(missing_ok=True)
+            deleted += 1
+        return {"success": True, "data": {"deleted": deleted}}
+
+    path = _DEVELOPER_DOC_RESULTS_DIR / filename
+    if not path.name.endswith("_judge_validation.json") or not path.exists():
+        raise HTTPException(status_code=404, detail=f"Judge run {filename!r} not found")
+    path.unlink(missing_ok=True)
+    return {"success": True, "data": {"deleted": 1}}
 
 
 _PREDICTION_PATH = Path(__file__).resolve().parents[3] / "evals" / "prediction.txt"

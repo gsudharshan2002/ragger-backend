@@ -21,11 +21,14 @@ class Settings(BaseSettings):
     PORT: int = 8000
 
     # LLM Provider
-    LLM_PROVIDER: Literal["groq", "gemini"] = "groq"
+    LLM_PROVIDER: Literal["groq", "gemini", "openrouter"] = "groq"
+    LLM_API_URL: Optional[str] = None
     GROQ_API_KEY: Optional[str] = None
     GEMINI_API_KEY: Optional[str] = None
+    OPENROUTER_API_KEY: Optional[str] = None
     GROQ_MODEL: str = "openai/gpt-oss-20b"
     GEMINI_MODEL: str = "gemini-3.6-flash"
+    OPENROUTER_MODEL: str = "meta-llama/llama-3.3-70b-instruct"
     LLM_TEMPERATURE: float = 0.7
     LLM_TOP_P: float = 1.0
     LLM_MAX_TOKENS: int = 1024

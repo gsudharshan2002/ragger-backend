@@ -3,6 +3,7 @@
 import argparse
 import asyncio
 import json
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -22,6 +23,14 @@ from evals.ragas_metrics import compute_context_precision, compute_faithfulness
 ROOT = Path(__file__).resolve().parent
 CASES_PATH = ROOT / "developer_docs_cases.json"
 RESULTS_DIR = ROOT / "results"
+
+# Delay (seconds) inserted between consecutive eval cases. The eval fires one
+# RAG generation call per case (plus a judge call, and 2 more with --ragas),
+# all sequentially with zero spacing by default. On rate-limited providers
+# (Groq's free tier caps requests/minute quite low) this burst trips the 429
+# immediately, so we throttle calls to stay under the limit. Override via the
+# EVAL_CASE_DELAY_MS env var, or 0 to disable throttling entirely.
+DEFAULT_CASE_DELAY_S = float(os.environ.get("EVAL_CASE_DELAY_MS", "2000")) / 1000.0
 
 # Loaded once at import time, not per-case - these fixtures don't change
 # mid-run. If they're ever missing (e.g. this eval script points at a
@@ -303,6 +312,7 @@ async def run_strategy(
     cases_file: str | None = None,
     use_ragas: bool = False,
     knowledge_base_id: str | None = None,
+    case_delay: float = DEFAULT_CASE_DELAY_S,
 ) -> tuple[dict[str, Any], Path]:
     """Run the developer-documentation eval set through a single retrieval
     strategy and persist a timestamped report to evals/results/.
@@ -326,7 +336,14 @@ async def run_strategy(
     cases_file_name = cases_file or CASES_PATH.name
     labels = label or Path(cases_file_name).stem
     RESULTS_DIR.mkdir(exist_ok=True)
-    results = [await _run_case(case, strategy, use_judge, use_ragas, knowledge_base_id) for case in cases]
+    results: list[dict[str, Any]] = []
+    for i, case in enumerate(cases):
+        results.append(await _run_case(case, strategy, use_judge, use_ragas, knowledge_base_id))
+        # Throttle between cases to avoid tripping the provider's per-minute
+        # rate limit with a burst of back-to-back LLM calls. print the progress
+        # so a long (multi-minute) eval isn't mistaken for a hang.
+        if i < len(cases) - 1 and case_delay > 0:
+            await asyncio.sleep(case_delay)
     created_at = datetime.now(UTC)
     report = {
         "track": "developer-documentation",

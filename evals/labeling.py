@@ -8,6 +8,7 @@ where the judge was never called, so there is nothing judge-derived to leak
 into a human label.
 """
 
+import asyncio
 import json
 from datetime import UTC, datetime
 from pathlib import Path
@@ -15,8 +16,15 @@ from typing import Any
 
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
 LABELS_PATH = Path(__file__).resolve().parent / "labels_25.json"
+CASES_PATH = Path(__file__).resolve().parent / "developer_docs_cases.json"
 
 CRITERION = "correct and helpful (the judge's single binary pass/fail criterion)"
+
+# Prevent concurrent label writes from clobbering each other when multiple
+# browser tabs or users save labels at the same time.
+_label_lock = asyncio.Lock()
+# Same guard, for writes to developer_docs_cases.json (see clear_regression_flag).
+_cases_lock = asyncio.Lock()
 
 
 def find_latest_no_judge_report() -> dict[str, Any] | None:
@@ -63,6 +71,8 @@ def get_label_session() -> dict[str, Any]:
             "question": c["question"],
             "answer": c.get("answer", ""),
             "mode": c.get("mode", "unknown"),
+            "regression": bool(c.get("regression", False)),
+            "regression_evidence": c.get("regression_evidence"),
         }
         for c in report["results"]
     ]
@@ -146,30 +156,56 @@ async def run_judge_validation() -> dict[str, Any]:
     return validation
 
 
-def save_label(source_report: str, source_report_created_at: str, case_id: str, label: str) -> dict[str, Any]:
+async def clear_regression_flag(case_id: str) -> dict[str, Any] | None:
+    """Demote a case in developer_docs_cases.json back to a normal case by
+    stripping its regression/regression_evidence fields. Called once a
+    regression case's hand label turns to "pass", confirming the fix holds -
+    the case keeps being tracked, it's just no longer an active known
+    failure. Returns the (possibly unchanged) case, or None if case_id
+    doesn't exist in the file.
+
+    Uses an async lock for the same reason save_label does: prevent
+    concurrent writes to the file from clobbering each other.
+    """
+    async with _cases_lock:
+        cases = json.loads(CASES_PATH.read_text(encoding="utf-8"))
+        for case in cases:
+            if case.get("id") == case_id:
+                case.pop("regression", None)
+                case.pop("regression_evidence", None)
+                CASES_PATH.write_text(json.dumps(cases, indent=2), encoding="utf-8")
+                return case
+        return None
+
+
+async def save_label(source_report: str, source_report_created_at: str, case_id: str, label: str) -> dict[str, Any]:
     """Add or update one label. Refuses if labels_25.json already exists
     against a DIFFERENT report than `source_report`, to avoid silently
-    mixing labels from two different answer sets."""
+    mixing labels from two different answer sets.
+
+    Uses an async lock to prevent concurrent writes from clobbering each
+    other when multiple browser tabs or users save labels simultaneously."""
     if label not in ("pass", "fail"):
         raise ValueError(f"label must be 'pass' or 'fail', got {label!r}")
 
-    existing = load_labels_file()
-    if existing and existing.get("source_report") != source_report:
-        raise ValueError(
-            f"labels_25.json already exists against a different report "
-            f"({existing.get('source_report')}) than {source_report}. "
-            f"Delete labels_25.json first to relabel against a new report."
-        )
+    async with _label_lock:
+        existing = load_labels_file()
+        if existing and existing.get("source_report") != source_report:
+            raise ValueError(
+                f"labels_25.json already exists against a different report "
+                f"({existing.get('source_report')}) than {source_report}. "
+                f"Delete labels_25.json first to relabel against a new report."
+            )
 
-    labels = dict((existing or {}).get("labels", {}))
-    labels[case_id] = label
+        labels = dict((existing or {}).get("labels", {}))
+        labels[case_id] = label
 
-    data = {
-        "source_report": source_report,
-        "source_report_created_at": source_report_created_at,
-        "criterion": CRITERION,
-        "labeled_at": datetime.now(UTC).isoformat(),
-        "labels": labels,
-    }
-    LABELS_PATH.write_text(json.dumps(data, indent=2), encoding="utf-8")
-    return data
+        data = {
+            "source_report": source_report,
+            "source_report_created_at": source_report_created_at,
+            "criterion": CRITERION,
+            "labeled_at": datetime.now(UTC).isoformat(),
+            "labels": labels,
+        }
+        LABELS_PATH.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        return data

@@ -125,6 +125,8 @@ async def get_default_rag_config(
     provider = saved_settings.get("llmProvider") or settings.LLM_PROVIDER
     if provider == "gemini":
         llm_model = saved_settings.get("geminiModel") or settings.GEMINI_MODEL
+    elif provider == "openrouter":
+        llm_model = saved_settings.get("openrouterModel") or settings.OPENROUTER_MODEL
     else:
         llm_model = saved_settings.get("groqModel") or settings.GROQ_MODEL
 
