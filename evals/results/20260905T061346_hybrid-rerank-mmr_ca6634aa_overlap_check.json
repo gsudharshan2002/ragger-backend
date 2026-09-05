@@ -1,0 +1,213 @@
+{
+  "track": "developer-documentation",
+  "label": "overlap_check",
+  "cases_file": "developer_docs_cases.json",
+  "strategy": "hybrid-rerank-mmr",
+  "created_at": "2026-09-05T06:13:46.499982+00:00",
+  "summary": {
+    "retrieval_score": 0.5,
+    "answer_score": 0.5,
+    "combined_score": 0.5,
+    "faithfulness": null,
+    "context_precision": null,
+    "problem_type_scores": {
+      "answer_quality": {
+        "cases": 1,
+        "combined_score": 0.0
+      },
+      "retrieval": {
+        "cases": 1,
+        "combined_score": 1.0
+      }
+    },
+    "mode_scores": {
+      "poor_answer": {
+        "cases": 1,
+        "passed": 0,
+        "pass_rate": 0.0
+      },
+      "poor_ranking": {
+        "cases": 1,
+        "passed": 1,
+        "pass_rate": 1.0
+      }
+    }
+  },
+  "results": [
+    {
+      "id": "combine-013",
+      "question": "How can a publisher's emitted values be consumed using Swift's async/await syntax instead of its own subscriber APIs?",
+      "problem_type": "answer_quality",
+      "mode": "poor_answer",
+      "tags": [
+        "combine",
+        "async-await"
+      ],
+      "regression": true,
+      "regression_evidence": {
+        "report": "evals/developer_docs_cases.json (page audit against app/data/chunks/chunks.json)",
+        "observed_at": "2026-09-05T00:00:00Z",
+        "observed_retrieval_score": 0.0,
+        "note": "expected_sources said page 6, but the AsyncPublisher/AsyncThrowingPublisher content ('Using Combine for Your App's Asynchronous Code') is actually indexed on page 5 - page 6 only has Encoders and Decoders content. Retrieval was being graded against the wrong page, which explains why this case kept coming back 'I couldn't find that information' across multiple runs: the right chunk was never the target it was scored against.",
+        "fixed_in_version": "page corrected 6 -> 5"
+      },
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": null,
+      "judge_reasoning": "",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 5
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "f81997a9-b1bd-43b7-b1be-485fdffe1500",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "b011319d-af53-422b-b9bb-098cddb4f5c8",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "f81997a9-b1bd-43b7-b1be-485fdffe1500",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "5c860d75-dbb9-4ae2-b018-49775df3c9a3",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "f81997a9-b1bd-43b7-b1be-485fdffe1500",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 3,
+          "section": "To p i c s",
+          "chunk_id": "5b4fa0bb-45e6-4d2f-aee1-892518b3aa7c",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "f81997a9-b1bd-43b7-b1be-485fdffe1500",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "9d4f435e-f271-4af0-bafc-55b987063912",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "f81997a9-b1bd-43b7-b1be-485fdffe1500",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 2,
+          "section": "Receiving and Handling Events with Combine",
+          "chunk_id": "ff883921-157a-4abc-927c-e84858b85426",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "asynchronous sequence",
+        "async"
+      ],
+      "answer": "I couldn't find that information in the provided context.",
+      "error": ""
+    },
+    {
+      "id": "combine-014",
+      "question": "What example does the Combine documentation give for coordinating multiple publishers together?",
+      "problem_type": "retrieval",
+      "mode": "poor_ranking",
+      "tags": [
+        "combine",
+        "publishers",
+        "chunk-overlap"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": null,
+      "judge_reasoning": "",
+      "combined_score": 1.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "f81997a9-b1bd-43b7-b1be-485fdffe1500",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "9d4f435e-f271-4af0-bafc-55b987063912",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "f81997a9-b1bd-43b7-b1be-485fdffe1500",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "b011319d-af53-422b-b9bb-098cddb4f5c8",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "f81997a9-b1bd-43b7-b1be-485fdffe1500",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 5,
+          "section": "Performing Key-Value Observing with Combine",
+          "chunk_id": "fc4f8bb1-56e1-4545-9893-d8ea0984631a",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "f81997a9-b1bd-43b7-b1be-485fdffe1500",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "5c860d75-dbb9-4ae2-b018-49775df3c9a3",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "f81997a9-b1bd-43b7-b1be-485fdffe1500",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 6,
+          "section": "Encoders and Decoders",
+          "chunk_id": "cf192b4c-9548-424d-8f3a-c2b3532962f0",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "text field",
+        "url requests"
+      ],
+      "answer": "The Combine documentation gives an example of subscribing to updates from a text field's publisher, using the text to perform URL requests, and then using another publisher to process the responses.",
+      "error": ""
+    }
+  ]
+}

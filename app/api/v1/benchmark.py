@@ -80,12 +80,43 @@ async def get_developer_docs_results() -> dict:
             reports.append(report)
     reports.sort(key=lambda r: r["created_at"])
 
+    # Pair the latest report with the most recent PRIOR report of the SAME
+    # strategy - a "before" from a different retrieval method isn't a
+    # meaningful comparison, it's just a different report.
     data: dict[str, dict] = {}
     if reports:
-        data["improved"] = reports[-1]
-    if len(reports) >= 2:
-        data["baseline"] = reports[-2]
+        latest = reports[-1]
+        data["improved"] = latest
+        same_strategy = [r for r in reports[:-1] if r.get("strategy") == latest.get("strategy")]
+        if same_strategy:
+            data["baseline"] = same_strategy[-1]
     return {"success": True, "data": data}
+
+
+@router.get("/developer-docs/reports")
+async def list_developer_docs_reports(strategy: Optional[str] = None) -> dict:
+    """List saved developer-docs eval reports, optionally filtered to one
+    strategy, newest first - real run history instead of guessing which
+    prior run to compare against."""
+    reports = []
+    for path in _DEVELOPER_DOC_RESULTS_DIR.glob("*.json"):
+        try:
+            report = json.loads(path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+        if "created_at" not in report or "summary" not in report:
+            continue
+        if strategy and report.get("strategy") != strategy:
+            continue
+        reports.append({
+            "filename": path.name,
+            "strategy": report.get("strategy"),
+            "created_at": report["created_at"],
+            "combined_score": report["summary"].get("combined_score"),
+            "label": report.get("label"),
+        })
+    reports.sort(key=lambda r: r["created_at"], reverse=True)
+    return {"success": True, "data": reports}
 
 
 class DeveloperDocCase(BaseModel):
@@ -109,8 +140,8 @@ class DeveloperDocCase(BaseModel):
 
 class DeveloperDocsRunRequest(BaseModel):
     cases: list[DeveloperDocCase]
-    baselineStrategy: str = "vector"
-    improvedStrategy: str = "hybrid-rrf"
+    strategy: str = "hybrid-rerank-mmr"
+    baselineStrategy: Optional[str] = None
     noJudge: bool = False
     casesFileName: Optional[str] = None
     useRagas: bool = False
@@ -119,41 +150,64 @@ class DeveloperDocsRunRequest(BaseModel):
 
 @router.post("/developer-docs/run")
 async def run_developer_docs(payload: DeveloperDocsRunRequest) -> dict:
-    """Run the Week 6 developer-documentation eval for two strategies and
-    persist fresh reports so the frontend comparison updates on Refresh.
+    """Run the Week 6 developer-documentation eval and persist a fresh
+    report so the frontend comparison updates on Refresh.
 
     The frontend sends:
       - cases: the test-case JSON array (from the uploaded file)
-      - baselineStrategy / improvedStrategy: which two RagStrategy slugs to compare
+      - strategy: the RagStrategy slug to run now (defaults to
+        hybrid-rerank-mmr, the one actual improved pipeline)
+      - baselineStrategy: optional - only set this to explicitly compare
+        against a DIFFERENT strategy run fresh right now. Left unset (the
+        normal case), "baseline" instead means "the most recent PRIOR report
+        for this SAME strategy", loaded from disk rather than re-executed -
+        i.e. did changing something about THIS strategy actually help,
+        compared to what it scored before you changed it. That's a same-
+        strategy before/after, not a different-retrieval-method comparison.
       - noJudge: skip LLM-as-judge (faster, keyword-only scoring)
       - casesFileName: the uploaded file's name, stored as report metadata
       - useRagas: also compute the bonus faithfulness/context-precision metrics
-        (2 extra LLM calls per case per strategy - off by default)
+        (2 extra LLM calls per case - off by default)
       - knowledgeBaseId: optional - scope retrieval to one knowledge base, same
         as Chat does. Omit to search every chunk in the store (prior behavior).
-
-    Returns the two reports it just computed directly (not re-derived from
-    directory contents), so the response always reflects exactly the two
-    strategies this request selected.
     """
-    from evals.run_developer_docs import run_strategy
+    from evals.run_developer_docs import RESULTS_DIR, _latest_previous_run_for_strategy, run_strategy
 
     cases_file = payload.casesFileName or "developer_docs_cases.json"
     label = Path(cases_file).stem
-
     cases = [c.model_dump() for c in payload.cases]
-    baseline_report, baseline_path = await run_strategy(
-        cases, payload.baselineStrategy, use_judge=not payload.noJudge,
-        label=label, cases_file=cases_file, use_ragas=payload.useRagas,
-        knowledge_base_id=payload.knowledgeBaseId,
-    )
+
     improved_report, improved_path = await run_strategy(
-        cases, payload.improvedStrategy, use_judge=not payload.noJudge,
+        cases, payload.strategy, use_judge=not payload.noJudge,
         label=label, cases_file=cases_file, use_ragas=payload.useRagas,
         knowledge_base_id=payload.knowledgeBaseId,
     )
-    _write_pair_pointer(baseline_path.name, improved_path.name)
-    return {"success": True, "data": {"baseline": baseline_report, "improved": improved_report}}
+
+    baseline_report: Optional[dict] = None
+    baseline_filename: Optional[str] = None
+    if payload.baselineStrategy:
+        # Explicit override: compare against a genuinely different strategy,
+        # run fresh right now (the old behavior).
+        baseline_report, baseline_path = await run_strategy(
+            cases, payload.baselineStrategy, use_judge=not payload.noJudge,
+            label=label, cases_file=cases_file, use_ragas=payload.useRagas,
+            knowledge_base_id=payload.knowledgeBaseId,
+        )
+        baseline_filename = baseline_path.name
+    else:
+        # Default: same-strategy before/after - the most recent PRIOR report
+        # for this exact strategy, not re-executed.
+        previous = _latest_previous_run_for_strategy(RESULTS_DIR, payload.strategy, exclude_path=improved_path)
+        if previous:
+            baseline_filename = previous.pop("_source_path")
+            baseline_report = previous
+
+    data: dict[str, dict] = {"improved": improved_report}
+    if baseline_report:
+        data["baseline"] = baseline_report
+    if baseline_filename:
+        _write_pair_pointer(baseline_filename, improved_path.name)
+    return {"success": True, "data": data}
 
 
 class GenerateForLabelingRequest(BaseModel):

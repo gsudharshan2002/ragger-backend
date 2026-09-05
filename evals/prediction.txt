@@ -1,1 +1,1 @@
-all correct 013 oly has retrival fail
+Adding combine-012 (self-correcting answer) and combine-013 (bare refusal) as worked examples should flip the judge's verdict on combine-012 to match the human "pass" label, but I expect combine-013 to stay a disagreement since a bare "I couldn't find it" genuinely isn't helpful under our own stated criterion - so agreement should tick up from 84.62% by roughly one case (~88%), not jump toward 100%.

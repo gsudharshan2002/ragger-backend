@@ -286,19 +286,34 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def _latest_previous_run(results_dir: Path) -> dict[str, Any] | None:
-    """Return the most recent existing eval run report, or None if there isn't
-    one. Requires "summary" (not just "created_at") so judge-validation
-    reports - which are also timestamped JSON in this same directory but
-    aren't eval runs - are never mistaken for one."""
+def _latest_previous_run_for_strategy(
+    results_dir: Path, strategy: str, exclude_path: Path | None = None
+) -> dict[str, Any] | None:
+    """Return the most recent existing eval run report for this EXACT
+    strategy, or None if there isn't one. A "before" measurement only means
+    something when it's the same strategy run at an earlier time - comparing
+    against a different strategy's report is comparing two different
+    retrieval methods, not before/after a change to this one.
+
+    Requires "summary" (not just "created_at") so judge-validation reports -
+    which are also timestamped JSON in this same directory but aren't eval
+    runs - are never mistaken for one. exclude_path skips the report just
+    written by this same invocation, so it's never mistaken for its own
+    "previous" run."""
     reports = []
     for path in results_dir.glob("*.json"):
+        if exclude_path is not None and path == exclude_path:
+            continue
         try:
             report = json.loads(path.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
             continue
-        if "created_at" in report and "summary" in report:
-            reports.append(report)
+        if "created_at" not in report or "summary" not in report:
+            continue
+        if report.get("strategy") != strategy:
+            continue
+        report["_source_path"] = path.name
+        reports.append(report)
     if not reports:
         return None
     return max(reports, key=lambda r: r["created_at"])
@@ -367,7 +382,7 @@ async def main() -> None:
     cases = json.loads(cases_path.read_text(encoding="utf-8"))
     label = args.label or cases_path.stem
 
-    previous_run = _latest_previous_run(RESULTS_DIR)
+    previous_run = _latest_previous_run_for_strategy(RESULTS_DIR, args.strategy)
 
     use_judge = not args.no_judge
     report, _ = await run_strategy(
@@ -401,9 +416,14 @@ async def main() -> None:
         # context (faithfulness >= 0.9) while that context was the wrong
         # document version for the question asked (mode == wrong_source).
         # The averages above can look fine while hiding exactly this.
+        # retrieval_score < 1.0 is required too - a wrong_source-tagged case
+        # where retrieval actually found the expected source (score 1.0) is
+        # just a well-answered case, not a "confidently wrong" one.
         confidently_wrong = [
             r for r in report["results"]
-            if r.get("mode") == "wrong_source" and (r.get("faithfulness") or 0) >= 0.9
+            if r.get("mode") == "wrong_source"
+            and (r.get("faithfulness") or 0) >= 0.9
+            and r.get("retrieval_score", 1.0) < 1.0
         ]
         if confidently_wrong:
             print("\nConfidently-wrong candidates (high faithfulness, wrong-version mode):")
