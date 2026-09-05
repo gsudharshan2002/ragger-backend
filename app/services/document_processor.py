@@ -1,4 +1,5 @@
 import os
+import random
 import re
 import uuid
 from typing import Optional
@@ -12,11 +13,29 @@ from app.services.storage import (
     add_document,
     update_document,
     delete_chunks_for_document,
+    get_all_chunks,
     get_data_dir,
     get_settings,
 )
 
 logger = get_logger(__name__)
+
+# Chunk ids are integers in [0, 2**13] (0..8192). uuid ids remain valid for
+# pre-existing chunks, but any chunk created from now on gets a numeric id.
+CHUNK_ID_MAX = 2 ** 13
+
+
+def _next_chunk_id(taken: set[int]) -> str:
+    """Return a fresh numeric chunk id (0..CHUNK_ID_MAX) not already in
+    `taken`, registering it as used. Falls back to a duplicate-allowed random
+    id if the (unrealistically small) id space is exhausted."""
+    if len(taken) <= CHUNK_ID_MAX:
+        for _ in range((CHUNK_ID_MAX + 1) * 10):
+            candidate = random.randint(0, CHUNK_ID_MAX)
+            if candidate not in taken:
+                taken.add(candidate)
+                return str(candidate)
+    return str(random.randint(0, CHUNK_ID_MAX))
 
 # Browser "print to PDF" artifacts: a timestamp+title header line and a
 # "Page N of M<url>" footer line, both glued onto adjacent text with no
@@ -48,21 +67,11 @@ _COMMON_SECTION_WORDS = {
     "competencies", "accomplishments", "portfolio", "contact",
 }
 
-# Lightweight, embedding-free "semantic grouping" signal: a sentence that
-# opens with one of these almost always continues the previous sentence's
-# thought rather than starting a new one, so the two shouldn't be split
-# across a chunk boundary just because the character budget was hit.
-_CONTINUATION_STARTERS = (
-    "it ", "it's ", "its ", "this ", "these ", "those ", "that ", "such ",
-    "he ", "she ", "they ", "however", "additionally", "furthermore",
-    "also", "moreover", "thus", "therefore", "then ", "so ", "meanwhile",
-)
-
-_STOPWORDS = {
-    "the", "a", "an", "and", "or", "but", "of", "to", "in", "on", "for",
-    "with", "is", "are", "was", "were", "be", "been", "by", "as", "at",
-    "from", "this", "that", "these", "those", "it", "its", "you", "your",
-}
+# Recursive character splitting tries each separator in priority order -
+# paragraph break, then line break, then word break - only falling through
+# to individual characters ("") if a piece still doesn't fit chunk_size
+# after all of those. See _atomic_pieces.
+_RECURSIVE_SEPARATORS = ["\n\n", "\n", " ", ""]
 
 _BULLET_MARKER_RE = re.compile(r"[•●▪‣∙]")
 
@@ -239,26 +248,6 @@ def _split_by_bullets(text: str) -> list[tuple[int, str]]:
     return items
 
 
-def _continues_topic(prev_sentence: str, next_sentence: str) -> bool:
-    """Lightweight, embedding-free heuristic: does `next_sentence` read as a
-    direct continuation of `prev_sentence`'s thought rather than a new one?
-    Used to avoid splitting a chunk in the middle of one continuous idea
-    purely because the character budget was hit exactly on that boundary."""
-    lowered_next = next_sentence.strip().lower()
-    if lowered_next.startswith(_CONTINUATION_STARTERS):
-        return True
-
-    def _content_words(s: str) -> set[str]:
-        return {w for w in re.findall(r"[a-z']+", s.lower()) if w not in _STOPWORDS and len(w) > 2}
-
-    prev_words = _content_words(prev_sentence)
-    next_words = _content_words(next_sentence)
-    if not prev_words or not next_words:
-        return False
-    overlap = prev_words & next_words
-    return len(overlap) >= 2 or (len(overlap) / min(len(prev_words), len(next_words))) >= 0.4
-
-
 def _page_bounds(pages_text: list[str]) -> list[tuple[int, int, int]]:
     """(start, end, page_number) for each page within the joined text."""
     bounds = []
@@ -286,77 +275,93 @@ def _page_for_span(start: int, end: int, bounds: list[tuple[int, int, int]]) -> 
     return best_page
 
 
-def _split_sentences_with_offsets(text: str) -> list[tuple[str, int]]:
-    """Same sentence split as before, but paired with each sentence's
-    character offset in the original text so chunks can be traced back to
-    a source page/heading."""
-    raw_sentences = re.split(r"(?<=[.!?])\s+", text)
-    result = []
+def _atomic_pieces(
+    text: str, start: int, chunk_size: int, separators: list[str]
+) -> list[tuple[str, int, int]]:
+    """Break `text` (which begins at absolute offset `start` in the
+    original document) into pieces small enough to pack into chunks of
+    chunk_size, by trying each separator in `separators` in order -
+    paragraph break, then line break, then word break - and recursing into
+    any piece still larger than chunk_size using the next separator down
+    the list. The final separator, "" (no separator left), falls back to
+    splitting at every character so any input can always be divided small
+    enough. A piece within chunk_size is never split further, even if an
+    earlier separator would have cut it up more finely - the goal is the
+    fewest pieces that still all fit, not the smallest possible pieces.
+
+    Returns (piece_text, start_offset, end_offset) triples with real
+    offsets into the original document, so the caller can trace a chunk
+    back to its source page/heading."""
+    if not text:
+        return []
+    if len(text) <= chunk_size or not separators:
+        return [(text, start, start + len(text))]
+
+    sep, rest = separators[0], separators[1:]
+    if sep == "":
+        return [(ch, start + i, start + i + 1) for i, ch in enumerate(text)]
+    if sep not in text:
+        return _atomic_pieces(text, start, chunk_size, rest)
+
+    pieces: list[tuple[str, int, int]] = []
     cursor = 0
-    for raw in raw_sentences:
-        s = raw.strip()
-        if not s:
-            continue
-        idx = text.find(s, cursor)
-        if idx == -1:
-            idx = cursor
-        result.append((s, idx))
-        cursor = idx + len(s)
-    return result
+    for part in text.split(sep):
+        part_start = start + cursor
+        if part:
+            pieces.extend(_atomic_pieces(part, part_start, chunk_size, rest))
+        cursor += len(part) + len(sep)
+    return pieces
 
 
 def _chunk_text(text: str, chunk_size: int = 512, overlap: int = 64) -> list[tuple[str, int, int]]:
-    """Split text into overlapping chunks by character count, packing whole
-    sentences and preferring not to split two topically-continuous
-    sentences apart (see _continues_topic). Returns (chunk_text,
-    start_offset, end_offset) so callers can map each chunk back to the
-    page(s) and heading it actually came from."""
+    """Recursive character splitting: break text into small atomic pieces
+    (see _atomic_pieces), then greedily pack consecutive pieces into chunks
+    up to chunk_size, carrying the trailing `overlap` characters of each
+    chunk into the start of the next so no boundary loses context. Returns
+    (chunk_text, start_offset, end_offset) so callers can map each chunk
+    back to the page(s) and heading it actually came from."""
     if not text:
         return []
 
-    sentences = _split_sentences_with_offsets(text)
-    if not sentences:
+    pieces = _atomic_pieces(text, 0, chunk_size, _RECURSIVE_SEPARATORS)
+    if not pieces:
         return []
 
-    # A chunk may run past chunk_size, but only far enough to keep two
-    # tightly-continuing sentences together - never split what reads as one
-    # continuous thought just because the budget was hit on that boundary,
-    # but also never let that grace grow unbounded.
-    soft_max = int(chunk_size * 1.3)
+    def _joined(parts: list[tuple[str, int, int]]) -> str:
+        return " ".join(p[0] for p in parts).strip()
 
     chunks: list[tuple[str, int, int]] = []
-    current_chunk = ""
+    current: list[tuple[str, int, int]] = []
     current_size = 0
-    current_start = sentences[0][1]
-    current_end = current_start
-    prev_sentence = ""
 
-    for sentence, offset in sentences:
-        sentence_size = len(sentence)
-        over_budget = current_size + sentence_size > chunk_size
-        must_split = current_size + sentence_size > soft_max
-        keep_together = (
-            over_budget and not must_split and current_chunk
-            and _continues_topic(prev_sentence, sentence)
-        )
+    for piece in pieces:
+        piece_text = piece[0]
+        piece_len = len(piece_text)
 
-        if over_budget and current_chunk and not keep_together:
-            chunks.append((current_chunk.strip(), current_start, current_end))
-            # Keep overlap
-            overlap_text = current_chunk[-overlap:] if overlap > 0 else ""
-            current_start = current_end - len(overlap_text) if overlap_text else offset
-            current_chunk = overlap_text
-            current_size = len(overlap_text)
-        elif not current_chunk:
-            current_start = offset
+        if current and current_size + piece_len > chunk_size:
+            chunks.append((_joined(current), current[0][1], current[-1][2]))
 
-        current_chunk += " " + sentence if current_chunk else sentence
-        current_size += sentence_size
-        current_end = offset + len(sentence)
-        prev_sentence = sentence
+            if overlap > 0:
+                # Carry trailing pieces totaling up to `overlap` characters
+                # into the next chunk, so it opens with context from the
+                # end of this one instead of a hard cut. Always keeps at
+                # least the last piece, even if it alone exceeds overlap.
+                carried: list[tuple[str, int, int]] = []
+                carried_size = 0
+                for p in reversed(current):
+                    if carried_size + len(p[0]) > overlap and carried:
+                        break
+                    carried.insert(0, p)
+                    carried_size += len(p[0])
+                current, current_size = carried, carried_size
+            else:
+                current, current_size = [], 0
 
-    if current_chunk.strip():
-        chunks.append((current_chunk.strip(), current_start, current_end))
+        current.append(piece)
+        current_size += piece_len
+
+    if current:
+        chunks.append((_joined(current), current[0][1], current[-1][2]))
 
     return chunks
 
@@ -406,6 +411,9 @@ async def _process_document_text(
     # section independently per bullet item, so a chunk never spans two
     # sections or two bullets; see _split_into_sections / _split_by_bullets.
     chunks: list[StoredChunk] = []
+    taken_chunk_ids = {
+        int(c.id) for c in await get_all_chunks() if c.id.isdigit()
+    }
     for section_label, segment_start, segment_text in sections:
         for item_start, item_text in _split_by_bullets(segment_text):
             for chunk_text_value, rel_start, rel_end in _chunk_text(item_text, chunk_size, chunk_overlap):
@@ -414,7 +422,7 @@ async def _process_document_text(
                 clean_content = _normalize_whitespace(chunk_text_value)
                 chunks.append(
                     StoredChunk(
-                        id=str(uuid.uuid4()),
+                        id=_next_chunk_id(taken_chunk_ids),
                         document_id=doc_id,
                         document_name=file_name,
                         content=clean_content,
@@ -425,12 +433,42 @@ async def _process_document_text(
                     )
                 )
 
-    # Generate embeddings
+    # Generate embeddings. get_embeddings_for_texts swallows its own errors
+    # and returns None on total failure - checked explicitly here (rather
+    # than silently storing embedding-less chunks) so a provider hiccup at
+    # ingest doesn't quietly degrade every future MMR run touching this
+    # document with no visible sign anything went wrong.
     chunk_texts = [c.content for c in chunks]
     embeddings = await get_embeddings_for_texts(chunk_texts)
-    if embeddings:
+    embedding_error: Optional[str] = None
+    if not embeddings:
+        embedding_error = (
+            f"Embedding generation failed for all {len(chunks)} chunk(s) - stored without "
+            "vectors. Vector search and MMR diversity won't work for this document until "
+            "it's reprocessed or embeddings are reindexed."
+        )
+        logger.error(f"{file_name}: {embedding_error}")
+    else:
+        if len(embeddings) < len(chunks):
+            missing = len(chunks) - len(embeddings)
+            embedding_error = (
+                f"Embedding generation returned {len(embeddings)}/{len(chunks)} vectors - "
+                f"{missing} chunk(s) stored without an embedding. Vector search and MMR "
+                "diversity won't work for those chunks until reindexed."
+            )
+            logger.error(f"{file_name}: {embedding_error}")
         for chunk, emb in zip(chunks, embeddings):
             chunk.embedding = emb
+
+    # Extract retrieval keywords per chunk (stored under metadata["keywords"]).
+    # Best-effort: prefer the configured LLM, fall back to local TF-IDF, and
+    # never fail the document on keyword trouble - see extract_keywords().
+    from app.services.keywords import extract_keywords
+
+    keywords = await extract_keywords(chunk_texts)
+    for chunk, kw in zip(chunks, keywords):
+        if kw:
+            chunk.metadata["keywords"] = kw
 
     # Store
     await add_chunks(chunks)
@@ -446,6 +484,7 @@ async def _process_document_text(
         path=original_path,
         knowledge_base_id=knowledge_base_id,
         folder_id=folder_id,
+        embedding_error=embedding_error,
     )
     await add_document(doc)
 

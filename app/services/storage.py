@@ -194,6 +194,61 @@ async def delete_document(doc_id: str) -> bool:
     return False
 
 
+async def clear_all_document_data() -> dict:
+    """Delete everything file-related: uploaded documents and their source
+    files on disk, chunks, per-document versions/history files, knowledge
+    bases and folders. Settings, datasets, benchmark results and trace runs
+    are deliberately left untouched. Returns the number of records removed
+    for each category."""
+    await init_storage()
+    global _chunks_cache, _documents_cache, _kb_cache, _folders_cache
+
+    doc_count = len(_documents_cache)
+    for doc in list(_documents_cache.values()):
+        if doc.path and os.path.exists(doc.path):
+            try:
+                os.remove(doc.path)
+            except OSError as exc:
+                logger.warning(f"Failed to remove document file {doc.path}: {exc}")
+    _documents_cache = {}
+    await _save_documents()
+
+    chunk_count = len(_chunks_cache)
+    _chunks_cache = []
+    await _save_chunks()
+
+    kb_count = len(_kb_cache)
+    _kb_cache = {}
+    await _save_kbs()
+
+    await _load_folders()
+    folder_count = len(_folders_cache)
+    _folders_cache = []
+    await _save_folders()
+
+    removed_meta = 0
+    if os.path.isdir(DOCUMENTS_DIR):
+        for fname in os.listdir(DOCUMENTS_DIR):
+            if fname.endswith("_versions.json") or fname.endswith("_history.json"):
+                try:
+                    os.remove(os.path.join(DOCUMENTS_DIR, fname))
+                    removed_meta += 1
+                except OSError:
+                    pass
+
+    logger.info(
+        f"Cleared all document data: {doc_count} documents, {chunk_count} chunks, "
+        f"{kb_count} knowledge bases, {folder_count} folders, {removed_meta} metadata files"
+    )
+    return {
+        "documents": doc_count,
+        "chunks": chunk_count,
+        "knowledgeBases": kb_count,
+        "folders": folder_count,
+        "metadataFiles": removed_meta,
+    }
+
+
 async def add_chunks(chunks: list[StoredChunk]) -> list[StoredChunk]:
     await init_storage()
     global _chunks_cache
@@ -212,6 +267,21 @@ async def update_chunk_embeddings(embeddings_by_id: dict[str, list[float]]) -> i
         new_embedding = embeddings_by_id.get(chunk.id)
         if new_embedding is not None:
             chunk.embedding = new_embedding
+            updated += 1
+    if updated:
+        await _save_chunks()
+    return updated
+
+
+async def update_chunk_keywords(keywords_by_id: dict[str, list[str]]) -> int:
+    """Backfill or refresh stored metadata keywords for existing chunks in
+    place, keyed by chunk id. Existing keywords are replaced, never merged."""
+    await init_storage()
+    updated = 0
+    for chunk in _chunks_cache:
+        new_keywords = keywords_by_id.get(chunk.id)
+        if new_keywords is not None:
+            chunk.metadata["keywords"] = new_keywords
             updated += 1
     if updated:
         await _save_chunks()

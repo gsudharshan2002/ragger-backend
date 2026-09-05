@@ -30,7 +30,7 @@ from app.services.search import (
     rrf_fusion,
     rerank_documents,
     mmr_selection,
-    _tokenize,
+    _query_terms,
 )
 from app.services.llm import (
     is_llm_configured,
@@ -576,7 +576,7 @@ async def execute_rag(
             {
                 "top_k": config.bm25.top_k,
                 "language": config.bm25.language,
-                "query_terms": _tokenize(query)[:5],
+                "query_terms": _query_terms(query, config.bm25.tokenizer),
             },
         )
 
@@ -600,9 +600,9 @@ async def execute_rag(
                         r.chunk.document_name
                     ),
                     "page": r.chunk.page,
-                    "query_terms": (
-                        r.query_terms[:5]
-                    ),
+                    "query_terms": r.query_terms,
+                    "keywords": r.chunk.metadata.get("keywords", []) or [],
+                    "matched_keywords": r.matched_keywords or [],
                 },
             )
 
@@ -1428,6 +1428,8 @@ async def _finalize_trace(
                     "page": r.chunk.page,
                     "score": r.score,
                     "rank": r.rank,
+                    "keywords": r.chunk.metadata.get("keywords", []) or [],
+                    "matched_keywords": r.matched_keywords or [],
                 }
                 for r in bm25_results
             ],

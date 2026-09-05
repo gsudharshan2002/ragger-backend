@@ -247,7 +247,7 @@
   },
   {
     "id": "combine-013",
-    "question": "How can a publisher's emitted values be consumed using Swift's async/await syntax instead of its own subscriber APIs?",
+    "question": "What does AsyncPublisher provide in Combine?",
     "expected_answer_keywords": [
       "asynchronous sequence",
       "async"

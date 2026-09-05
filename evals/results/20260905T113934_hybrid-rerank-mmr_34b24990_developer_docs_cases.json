@@ -1,0 +1,2356 @@
+{
+  "track": "developer-documentation",
+  "label": "developer_docs_cases",
+  "cases_file": "developer_docs_cases.json",
+  "strategy": "hybrid-rerank-mmr",
+  "created_at": "2026-09-05T11:39:34.797757+00:00",
+  "summary": {
+    "retrieval_score": 1.0,
+    "answer_score": 0.9259,
+    "combined_score": 0.963,
+    "faithfulness": null,
+    "context_precision": null,
+    "problem_type_scores": {
+      "answer_quality": {
+        "cases": 7,
+        "combined_score": 1.0
+      },
+      "retrieval": {
+        "cases": 20,
+        "combined_score": 0.95
+      }
+    },
+    "mode_scores": {
+      "citation_failure": {
+        "cases": 1,
+        "passed": 1,
+        "pass_rate": 1.0
+      },
+      "missing_source": {
+        "cases": 15,
+        "passed": 14,
+        "pass_rate": 0.9333
+      },
+      "poor_answer": {
+        "cases": 5,
+        "passed": 5,
+        "pass_rate": 1.0
+      },
+      "poor_context": {
+        "cases": 1,
+        "passed": 1,
+        "pass_rate": 1.0
+      },
+      "poor_ranking": {
+        "cases": 1,
+        "passed": 1,
+        "pass_rate": 1.0
+      },
+      "prompt_issue": {
+        "cases": 1,
+        "passed": 1,
+        "pass_rate": 1.0
+      },
+      "wrong_source": {
+        "cases": 3,
+        "passed": 2,
+        "pass_rate": 0.6667
+      }
+    }
+  },
+  "results": [
+    {
+      "id": "combine-001",
+      "question": "What does the Combine framework provide?",
+      "problem_type": "answer_quality",
+      "mode": "poor_answer",
+      "tags": [
+        "combine",
+        "framework-overview"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer correctly covers the key facts of a declarative Swift API for processing values over time.",
+      "combined_score": 1.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "80",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "6439",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": "Overview",
+          "chunk_id": "969",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "5518",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 2,
+          "section": "Documentation Language:Swift",
+          "chunk_id": "289",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "declarative",
+        "swift api",
+        "values over time"
+      ],
+      "answer": "The Combine framework provides a declarative Swift API for processing values over time. It declares publishers to expose values that can change over time, and subscribers to receive those values from the publishers. Additionally, it provides a built-in publisher for any property that's compliant with Key-Value Observing, and for several Foundation types, including Timer, NotificationCenter, and URLSession.",
+      "error": ""
+    },
+    {
+      "id": "combine-002",
+      "question": "What does the Publisher protocol declare?",
+      "problem_type": "retrieval",
+      "mode": "missing_source",
+      "tags": [
+        "combine",
+        "publishers"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer directly covers the key facts of a sequence of values over time.",
+      "combined_score": 1.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "80",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 2,
+          "section": "Receiving and Handling Events with Combine",
+          "chunk_id": "665",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 4,
+          "section": "Connectable Publishers",
+          "chunk_id": "1746",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 6,
+          "section": "Encoders and Decoders",
+          "chunk_id": "3578",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 3,
+          "section": "Controlling Publishing with Connectable Publishers",
+          "chunk_id": "3601",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "sequence of values",
+        "over time"
+      ],
+      "answer": "The Publisher protocol declares a type that can deliver a sequence of values over time.",
+      "error": ""
+    },
+    {
+      "id": "combine-003",
+      "question": "What does a Subscriber do at the end of a chain of publishers?",
+      "problem_type": "retrieval",
+      "mode": "missing_source",
+      "tags": [
+        "combine",
+        "subscribers"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer correctly states the Subscriber's role in acting on and receiving elements.",
+      "combined_score": 1.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "5518",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 4,
+          "section": "Connectable Publishers",
+          "chunk_id": "1746",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 3,
+          "section": "To p i c s",
+          "chunk_id": "5919",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "6439",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 3,
+          "section": "Controlling Publishing with Connectable Publishers",
+          "chunk_id": "3601",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "acts on elements",
+        "receives"
+      ],
+      "answer": "At the end of a chain of publishers, a Subscriber acts on elements as it receives them.",
+      "error": ""
+    },
+    {
+      "id": "combine-004",
+      "question": "What are the benefits of adopting Combine in your code?",
+      "problem_type": "answer_quality",
+      "mode": "poor_answer",
+      "tags": [
+        "combine",
+        "framework-overview"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer correctly covers the key benefits of adopting Combine in code.",
+      "combined_score": 1.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 2
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 2,
+          "section": "Documentation Language:Swift",
+          "chunk_id": "289",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "6439",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 5,
+          "section": "Using Combine for Your App\u02bcs Asynchronous Code",
+          "chunk_id": "4223",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "80",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "5518",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "easier to read",
+        "maintain"
+      ],
+      "answer": "According to the context, the benefits of adopting Combine in your code are that it makes your code easier to read and maintain, by centralizing your event-processing code and eliminating troublesome techniques like nested closures and convention-based callbacks.",
+      "error": ""
+    },
+    {
+      "id": "combine-005",
+      "question": "What is AnyPublisher in Combine?",
+      "problem_type": "retrieval",
+      "mode": "missing_source",
+      "tags": [
+        "combine",
+        "publishers"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer correctly covers the key facts of type erasure and wrapping.",
+      "combined_score": 1.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 2
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 2,
+          "section": "Receiving and Handling Events with Combine",
+          "chunk_id": "665",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 5,
+          "section": "Using Combine for Your App\u02bcs Asynchronous Code",
+          "chunk_id": "4223",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "6439",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 3,
+          "section": "Controlling Publishing with Connectable Publishers",
+          "chunk_id": "3601",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "80",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "type erasure",
+        "wrapping"
+      ],
+      "answer": "In Combine, AnyPublisher is a publisher that performs type erasure by wrapping another publisher.",
+      "error": ""
+    },
+    {
+      "id": "combine-006",
+      "question": "What does the Future class do in Combine?",
+      "problem_type": "answer_quality",
+      "mode": "poor_answer",
+      "tags": [
+        "combine",
+        "publishers"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer correctly describes the Future class as producing a single value and either finishing or failing.",
+      "combined_score": 1.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 3
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 5,
+          "section": "Using Combine for Your App\u02bcs Asynchronous Code",
+          "chunk_id": "4223",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 3,
+          "section": "To p i c s",
+          "chunk_id": "5919",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "6439",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "80",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 2,
+          "section": "Documentation Language:Swift",
+          "chunk_id": "289",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "single value",
+        "finishes",
+        "fails"
+      ],
+      "answer": "The Future class in Combine is a publisher that eventually produces a single value and then finishes or fails.",
+      "error": ""
+    },
+    {
+      "id": "combine-007",
+      "question": "What does the Subscriber protocol declare?",
+      "problem_type": "retrieval",
+      "mode": "missing_source",
+      "tags": [
+        "combine",
+        "subscribers"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "failed",
+      "retrieval_score": 1.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": "fail",
+      "judge_reasoning": "The answer refuses to provide the declaration despite having the necessary information.",
+      "combined_score": 0.5,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 4
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 4,
+          "section": "Connectable Publishers",
+          "chunk_id": "1746",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "80",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "5518",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 5,
+          "section": "Connectable Publishers",
+          "chunk_id": "3521",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 2,
+          "section": "Receiving and Handling Events with Combine",
+          "chunk_id": "665",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "receive input",
+        "publisher"
+      ],
+      "answer": "The context does not explicitly state what the Subscriber protocol declares. It mentions that \"A protocol that declares a type that can receive input from a publisher\" is referred to as Subscriber A protocol, but the exact declaration is not provided.",
+      "error": ""
+    },
+    {
+      "id": "combine-008",
+      "question": "What is a CurrentValueSubject in Combine?",
+      "problem_type": "answer_quality",
+      "mode": "poor_answer",
+      "tags": [
+        "combine",
+        "subjects"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer correctly describes the key characteristics of a CurrentValueSubject.",
+      "combined_score": 1.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 4
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 4,
+          "section": "Connectable Publishers",
+          "chunk_id": "6761",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 5,
+          "section": "Using Combine for Your App\u02bcs Asynchronous Code",
+          "chunk_id": "4223",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "80",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "6439",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 6,
+          "section": "Encoders and Decoders",
+          "chunk_id": "3578",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "wraps a single value",
+        "publishes a new element"
+      ],
+      "answer": "A CurrentValueSubject is a subject that wraps a single value and publishes a new element whenever the value changes.",
+      "error": ""
+    },
+    {
+      "id": "combine-009",
+      "question": "How can values be emitted at regular time intervals without writing a raw timer callback yourself?",
+      "problem_type": "retrieval",
+      "mode": "missing_source",
+      "tags": [
+        "combine",
+        "timers",
+        "schedulers"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer correctly mentions using a Timer Publisher to emit values periodically.",
+      "combined_score": 1.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 5
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "5518",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 5,
+          "section": "Replacing Foundation Timers with Timer Publishers",
+          "chunk_id": "4618",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "80",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "GET /repos/{owner}/{repo}/contents/{path}",
+          "chunk_id": "3067",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 2,
+          "section": "Receiving and Handling Events with Combine",
+          "chunk_id": "665",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "timer",
+        "periodically",
+        "publisher"
+      ],
+      "answer": "Values can be emitted at regular time intervals by using a Timer Publisher, as mentioned in source id=\"2\". This allows you to publish elements periodically without having to write a raw timer callback yourself.",
+      "error": ""
+    },
+    {
+      "id": "combine-010",
+      "question": "How can property changes tracked through Objective-C's Key-Value Observing mechanism be turned into a stream of values?",
+      "problem_type": "retrieval",
+      "mode": "missing_source",
+      "tags": [
+        "combine",
+        "kvo"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer correctly connects Key-Value Observing to the use of a Combine publisher to create a stream of values.",
+      "combined_score": 1.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 5
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 5,
+          "section": "Performing Key-Value Observing with Combine",
+          "chunk_id": "2022",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "6439",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "GET /repos/{owner}/{repo}/code-scanning/default-setup",
+          "chunk_id": "5131",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "80",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 3,
+          "section": "Processing Published Elements with Subscribers",
+          "chunk_id": "2764",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "key-value observing",
+        "kvo",
+        "publisher"
+      ],
+      "answer": "Property changes tracked through Objective-C's Key-Value Observing (KVO) mechanism can be turned into a stream of values by exposing KVO changes with a Combine publisher.",
+      "error": ""
+    },
+    {
+      "id": "combine-011",
+      "question": "How would system notifications be delivered to subscribers instead of using NotificationCenter's traditional observer API directly?",
+      "problem_type": "answer_quality",
+      "mode": "poor_answer",
+      "tags": [
+        "combine",
+        "notifications"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer correctly explains how system notifications can be delivered to subscribers using notification centers' publishers.",
+      "combined_score": 1.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 5
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 5,
+          "section": "Routing Notifications to Combine Subscribers",
+          "chunk_id": "7350",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "5518",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "6439",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "16541b3a-d990-433b-9064-33593f635593",
+          "document_name": "old-version.md",
+          "page": 1,
+          "section": "GitHub REST API Reference \u2014 old-version",
+          "chunk_id": "4458",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "80",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "notification center",
+        "publisher",
+        "subscribers"
+      ],
+      "answer": "System notifications can be delivered to subscribers by using notification centers' publishers, as stated in the context: \"Routing Notifications to Combine Subscribers Deliver notifications to subscribers by using notification centers\u02bc publishers.\" This implies that instead of using NotificationCenter's traditional observer API directly, you can use its publishers to deliver notifications to subscribers.",
+      "error": ""
+    },
+    {
+      "id": "combine-012",
+      "question": "What protocol would you conform to if you needed custom logic for turning Swift values into a serialized data format?",
+      "problem_type": "retrieval",
+      "mode": "missing_source",
+      "tags": [
+        "combine",
+        "encoding"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer correctly identifies the TopLevelEncoder protocol for custom encoding logic.",
+      "combined_score": 1.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 6
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "80",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 2,
+          "section": "Receiving and Handling Events with Combine",
+          "chunk_id": "665",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 2,
+          "section": "Documentation Language:Swift",
+          "chunk_id": "289",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 6,
+          "section": "Encoders and Decoders",
+          "chunk_id": "3578",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "GET /repos/{owner}/{repo}/code-scanning/default-setup",
+          "chunk_id": "5131",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "encoding",
+        "encoder"
+      ],
+      "answer": "To turn Swift values into a serialized data format with custom logic, you would conform to the `TopLevelEncoder` protocol, which defines methods for encoding.",
+      "error": ""
+    },
+    {
+      "id": "combine-013",
+      "question": "What does AsyncPublisher provide in Combine?",
+      "problem_type": "retrieval",
+      "mode": "missing_source",
+      "tags": [
+        "combine",
+        "async-await"
+      ],
+      "regression": true,
+      "regression_evidence": {
+        "report": "20260905T061346_hybrid-rerank-mmr_ca6634aa_overlap_check.json",
+        "observed_at": "2026-09-05T06:13:46Z",
+        "observed_retrieval_score": 0,
+        "note": "expected_sources previously said page 6 (fixed to 5: the AsyncPublisher/AsyncThrowingPublisher content, 'Using Combine for Your App's Asynchronous Code', is indexed on page 5 - page 6 only has Encoders and Decoders content). That was a real bug in the test data, but fixing it exposed a second, still-live bug underneath: even scored against the correct page 5, hybrid-rerank-mmr's top-5 retrieval for this exact question returned pages [1, 1, 3, 1, 2] and never page 5 - a genuine, reproduced retrieval miss, not just a mislabeled case. This is why the assistant kept answering 'I couldn't find that information' - it never was a bad-answer problem, it was retrieval never surfacing the right chunk. Not yet fixed.",
+        "fixed_in_version": null
+      },
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer correctly identifies AsyncPublisher's role in providing an asynchronous sequence.",
+      "combined_score": 1.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 5
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "80",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 5,
+          "section": "Using Combine for Your App\u02bcs Asynchronous Code",
+          "chunk_id": "4223",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "6439",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "5518",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 2,
+          "section": "Receiving and Handling Events with Combine",
+          "chunk_id": "665",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "asynchronous sequence",
+        "async"
+      ],
+      "answer": "In Combine, AsyncPublisher provides its elements as an asynchronous sequence.",
+      "error": ""
+    },
+    {
+      "id": "combine-014",
+      "question": "What example does the Combine documentation give for coordinating multiple publishers together?",
+      "problem_type": "retrieval",
+      "mode": "poor_ranking",
+      "tags": [
+        "combine",
+        "publishers",
+        "chunk-overlap"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer correctly mentions the text field and URL requests as examples of coordinating multiple publishers.",
+      "combined_score": 1.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "6439",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "80",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 5,
+          "section": "Performing Key-Value Observing with Combine",
+          "chunk_id": "2022",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 6,
+          "section": "Encoders and Decoders",
+          "chunk_id": "3578",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "5518",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "text field",
+        "url requests"
+      ],
+      "answer": "The Combine documentation gives an example of subscribing to updates from a text field's publisher, using the text to perform URL requests, and then using another publisher to process the responses.",
+      "error": ""
+    },
+    {
+      "id": "gh-001",
+      "question": "In the current GitHub API version, what field should you read to get your core rate limit information?",
+      "problem_type": "retrieval",
+      "mode": "missing_source",
+      "tags": [
+        "github-api",
+        "rate-limit",
+        "current-version"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer correctly identifies the resources.core field for core rate limit information.",
+      "combined_score": 1.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "current-version.md",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "16541b3a-d990-433b-9064-33593f635593",
+          "document_name": "old-version.md",
+          "page": 1,
+          "section": "GET /rate_limit",
+          "chunk_id": "74",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "GET /rate_limit",
+          "chunk_id": "4475",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "GitHub REST API Reference \u2014 current-version",
+          "chunk_id": "6446",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "16541b3a-d990-433b-9064-33593f635593",
+          "document_name": "old-version.md",
+          "page": 1,
+          "section": "GitHub REST API Reference \u2014 old-version",
+          "chunk_id": "4458",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "16541b3a-d990-433b-9064-33593f635593",
+          "document_name": "old-version.md",
+          "page": 1,
+          "section": "GitHub REST API Reference \u2014 old-version",
+          "chunk_id": "2158",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "resources.core",
+        "core"
+      ],
+      "answer": "In the current GitHub API version, you should read the `resources.core` field to get your core rate limit information. The top-level `rate` property has been removed, and rate limit information is now available under `resources.core`.",
+      "error": ""
+    },
+    {
+      "id": "gh-002",
+      "question": "Using API Version 2026-03-10, does the GET /rate_limit response still include a top-level rate field?",
+      "problem_type": "retrieval",
+      "mode": "wrong_source",
+      "tags": [
+        "github-api",
+        "rate-limit",
+        "version-confusion"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer correctly states the removal of the top-level rate field and provides the alternative location for rate limit information.",
+      "combined_score": 1.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "current-version.md",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "16541b3a-d990-433b-9064-33593f635593",
+          "document_name": "old-version.md",
+          "page": 1,
+          "section": "GET /rate_limit",
+          "chunk_id": "74",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "GitHub REST API Reference \u2014 current-version",
+          "chunk_id": "6446",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "GET /rate_limit",
+          "chunk_id": "4475",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "16541b3a-d990-433b-9064-33593f635593",
+          "document_name": "old-version.md",
+          "page": 1,
+          "section": "GitHub REST API Reference \u2014 old-version",
+          "chunk_id": "2158",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "GET /repos/{owner}/{repo}/attestations/{subject_digest}",
+          "chunk_id": "350",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "no",
+        "removed",
+        "resources.core"
+      ],
+      "answer": "No, the GET /rate_limit response does not include a top-level `rate` field when using API Version 2026-03-10. According to the documentation, the deprecated top-level `rate` property has been removed, and rate limit information should be read from `resources.core` instead.",
+      "error": ""
+    },
+    {
+      "id": "gh-003",
+      "question": "If my integration currently reads the top-level rate field from /rate_limit, what should I change to keep working on the current API version?",
+      "problem_type": "answer_quality",
+      "mode": "citation_failure",
+      "tags": [
+        "github-api",
+        "rate-limit",
+        "migration"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 0.5,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer correctly identifies the replacement for the top-level rate field as resources.core.",
+      "combined_score": 1.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "current-version.md",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "GET /rate_limit",
+          "chunk_id": "4475",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "16541b3a-d990-433b-9064-33593f635593",
+          "document_name": "old-version.md",
+          "page": 1,
+          "section": "GET /rate_limit",
+          "chunk_id": "74",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "16541b3a-d990-433b-9064-33593f635593",
+          "document_name": "old-version.md",
+          "page": 1,
+          "section": "GitHub REST API Reference \u2014 old-version",
+          "chunk_id": "2158",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "80",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "GitHub REST API Reference \u2014 current-version",
+          "chunk_id": "6446",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "resources.core",
+        "migrat"
+      ],
+      "answer": "To keep working on the current API version, you should replace any code reading the top-level `rate` field with `resources.core`. This is because the top-level `rate` property has been removed in the current version, and rate limit information is now read from `resources.core` instead.",
+      "error": ""
+    },
+    {
+      "id": "gh-004",
+      "question": "On the current API version, what value does a submodule entry report for its type field when listing repository contents?",
+      "problem_type": "retrieval",
+      "mode": "missing_source",
+      "tags": [
+        "github-api",
+        "contents",
+        "current-version"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer correctly states the type field value for a submodule entry.",
+      "combined_score": 1.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "current-version.md",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "16541b3a-d990-433b-9064-33593f635593",
+          "document_name": "old-version.md",
+          "page": 1,
+          "section": "GET /repos/{owner}/{repo}/contents/{path}",
+          "chunk_id": "464",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "GET /repos/{owner}/{repo}/contents/{path}",
+          "chunk_id": "3067",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "GitHub REST API Reference \u2014 current-version",
+          "chunk_id": "6446",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "80",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "GET /repos/{owner}/{repo}",
+          "chunk_id": "354",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "submodule"
+      ],
+      "answer": "On the current API version, a submodule entry reports `\"type\": \"submodule\"` when listing repository contents.",
+      "error": ""
+    },
+    {
+      "id": "gh-005",
+      "question": "On API Version 2022-11-28, what type value does a submodule entry report when listing repository contents?",
+      "problem_type": "retrieval",
+      "mode": "wrong_source",
+      "tags": [
+        "github-api",
+        "contents",
+        "version-confusion"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer correctly states the type value reported by a submodule entry.",
+      "combined_score": 1.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "old-version.md",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "GET /repos/{owner}/{repo}/contents/{path}",
+          "chunk_id": "3067",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "16541b3a-d990-433b-9064-33593f635593",
+          "document_name": "old-version.md",
+          "page": 1,
+          "section": "GitHub REST API Reference \u2014 old-version",
+          "chunk_id": "2158",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "16541b3a-d990-433b-9064-33593f635593",
+          "document_name": "old-version.md",
+          "page": 1,
+          "section": "GET /repos/{owner}/{repo}/contents/{path}",
+          "chunk_id": "464",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "GET /repos/{owner}/{repo}/code-scanning/default-setup",
+          "chunk_id": "5131",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "16541b3a-d990-433b-9064-33593f635593",
+          "document_name": "old-version.md",
+          "page": 1,
+          "section": "GitHub REST API Reference \u2014 old-version",
+          "chunk_id": "4458",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "file"
+      ],
+      "answer": "On API Version 2022-11-28, a submodule entry reports `\"type\": \"file\"` when listing repository contents.",
+      "error": ""
+    },
+    {
+      "id": "gh-006",
+      "question": "Does the current version of GET /repos/{owner}/{repo} still include a has_downloads field?",
+      "problem_type": "retrieval",
+      "mode": "missing_source",
+      "tags": [
+        "github-api",
+        "repos",
+        "current-version"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer correctly states that the has_downloads field has been removed.",
+      "combined_score": 1.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "current-version.md",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "GET /repos/{owner}/{repo}",
+          "chunk_id": "354",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "16541b3a-d990-433b-9064-33593f635593",
+          "document_name": "old-version.md",
+          "page": 1,
+          "section": "GET /repos/{owner}/{repo}",
+          "chunk_id": "4392",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "GET /repos/{owner}/{repo}/issues/{issue_number}",
+          "chunk_id": "4378",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "GET /repos/{owner}/{repo}/pulls/{pull_number}",
+          "chunk_id": "1447",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "GET /repos/{owner}/{repo}/code-scanning/default-setup",
+          "chunk_id": "5131",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "no",
+        "removed"
+      ],
+      "answer": "No, the current version of GET /repos/{owner}/{repo} does not include a `has_downloads` field. According to the context, \"The deprecated **`has_downloads` property has been removed** from the repository object; there is no replacement field.\"",
+      "error": ""
+    },
+    {
+      "id": "gh-007",
+      "question": "My code reads pull_request.merge_commit_sha after a merge completes. Will that still work on the current API version, and if not what should I do instead?",
+      "problem_type": "answer_quality",
+      "mode": "prompt_issue",
+      "tags": [
+        "github-api",
+        "pulls",
+        "migration"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer correctly states that the field has been removed and provides a helpful alternative solution using the commit history.",
+      "combined_score": 1.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "current-version.md",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "16541b3a-d990-433b-9064-33593f635593",
+          "document_name": "old-version.md",
+          "page": 1,
+          "section": "GET /repos/{owner}/{repo}/pulls/{pull_number}",
+          "chunk_id": "4006",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "GET /repos/{owner}/{repo}/pulls/{pull_number}",
+          "chunk_id": "1447",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "GitHub REST API Reference \u2014 current-version",
+          "chunk_id": "6446",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 2,
+          "section": "Documentation Language:Swift",
+          "chunk_id": "289",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "16541b3a-d990-433b-9064-33593f635593",
+          "document_name": "old-version.md",
+          "page": 1,
+          "section": "GitHub REST API Reference \u2014 old-version",
+          "chunk_id": "2158",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "removed",
+        "commit history"
+      ],
+      "answer": "No, that will not work on the current API version. According to the current-version.md documentation, the **`merge_commit_sha` field has been removed** from all pull request responses. \n\nInstead, you should look up the merge commit via the repository's commit history. You can do this by migrating from the 2022-11-28 API version, which still includes the `merge_commit_sha` field, but you will need to opt out of the current version by not sending the `X-GitHub-Api-Version: 2026-03-10` request header or by sending `X-GitHub-Api-Version: 2022-11-28` to use the old version.",
+      "error": ""
+    },
+    {
+      "id": "gh-008",
+      "question": "On the current API version, how should you read the assigned users of an issue instead of the old singular assignee field?",
+      "problem_type": "retrieval",
+      "mode": "missing_source",
+      "tags": [
+        "github-api",
+        "issues",
+        "current-version"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer correctly instructs to use the `assignees` array instead of the old singular field.",
+      "combined_score": 1.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "current-version.md",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "GET /repos/{owner}/{repo}/issues/{issue_number}",
+          "chunk_id": "4378",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "16541b3a-d990-433b-9064-33593f635593",
+          "document_name": "old-version.md",
+          "page": 1,
+          "section": "GET /repos/{owner}/{repo}/issues/{issue_number}",
+          "chunk_id": "4011",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "GitHub REST API Reference \u2014 current-version",
+          "chunk_id": "6446",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "16541b3a-d990-433b-9064-33593f635593",
+          "document_name": "old-version.md",
+          "page": 1,
+          "section": "GitHub REST API Reference \u2014 old-version",
+          "chunk_id": "4458",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "aa358a39-0229-4652-bd93-1927cfba559b",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 2,
+          "section": "Documentation Language:Swift",
+          "chunk_id": "289",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "assignees"
+      ],
+      "answer": "On the current API version, you should read and write assignees exclusively through the `assignees` array instead of the old singular `assignee` field. The `assignees` array contains objects with a `login` field, such as `{ \"login\": \"octocat\" }`. \n\nFor example: \n```json\n{\n  \"number\": 10,\n  \"assignees\": [\n    { \"login\": \"octocat\" }\n  ]\n}\n```",
+      "error": ""
+    },
+    {
+      "id": "gh-009",
+      "question": "What HTTP status code does the current API version return on a successful workflow dispatch request, and what is in the response body?",
+      "problem_type": "retrieval",
+      "mode": "missing_source",
+      "tags": [
+        "github-api",
+        "actions",
+        "current-version"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer correctly states the HTTP status code and describes the response body contents.",
+      "combined_score": 1.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "current-version.md",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches",
+          "chunk_id": "5795",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches",
+          "chunk_id": "1045",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "16541b3a-d990-433b-9064-33593f635593",
+          "document_name": "old-version.md",
+          "page": 1,
+          "section": "POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches",
+          "chunk_id": "4134",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "GitHub REST API Reference \u2014 current-version",
+          "chunk_id": "6446",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "16541b3a-d990-433b-9064-33593f635593",
+          "document_name": "old-version.md",
+          "page": 1,
+          "section": "GET /rate_limit",
+          "chunk_id": "74",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "200",
+        "workflow run"
+      ],
+      "answer": "The current API version returns a **200 OK** HTTP status code on a successful workflow dispatch request. The response body contains the triggered workflow run's details, which include the `id`, `status`, and `workflow_id` of the run, as shown in the example JSON response:\n\n```json\n{\n  \"id\": 123456,\n  \"status\": \"queued\",\n  \"workflow_id\": 1\n}\n```",
+      "error": ""
+    },
+    {
+      "id": "gh-010",
+      "question": "Using API Version 2022-11-28, what status code is returned by a successful workflow dispatch request?",
+      "problem_type": "retrieval",
+      "mode": "wrong_source",
+      "tags": [
+        "github-api",
+        "actions",
+        "version-confusion"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "failed",
+      "retrieval_score": 1.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": "fail",
+      "judge_reasoning": "The answer is a bare refusal without explanation or direction.",
+      "combined_score": 0.5,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "old-version.md",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches",
+          "chunk_id": "1045",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "16541b3a-d990-433b-9064-33593f635593",
+          "document_name": "old-version.md",
+          "page": 1,
+          "section": "GitHub REST API Reference \u2014 old-version",
+          "chunk_id": "2158",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches",
+          "chunk_id": "5795",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "DELETE /app/installations/{installation_id}",
+          "chunk_id": "2697",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "16541b3a-d990-433b-9064-33593f635593",
+          "document_name": "old-version.md",
+          "page": 1,
+          "section": "GitHub REST API Reference \u2014 old-version",
+          "chunk_id": "4458",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "204"
+      ],
+      "answer": "I couldn't find that information in the provided context.",
+      "error": ""
+    },
+    {
+      "id": "gh-011",
+      "question": "On the current API version, what status code does deleting a GitHub App installation return?",
+      "problem_type": "retrieval",
+      "mode": "missing_source",
+      "tags": [
+        "github-api",
+        "apps",
+        "current-version"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer correctly states the status code as 202.",
+      "combined_score": 1.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "current-version.md",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "16541b3a-d990-433b-9064-33593f635593",
+          "document_name": "old-version.md",
+          "page": 1,
+          "section": "DELETE /app/installations/{installation_id}",
+          "chunk_id": "1563",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "GitHub REST API Reference \u2014 current-version",
+          "chunk_id": "6446",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "DELETE /app/installations/{installation_id}",
+          "chunk_id": "2697",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "16541b3a-d990-433b-9064-33593f635593",
+          "document_name": "old-version.md",
+          "page": 1,
+          "section": "GitHub REST API Reference \u2014 old-version",
+          "chunk_id": "2158",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "16541b3a-d990-433b-9064-33593f635593",
+          "document_name": "old-version.md",
+          "page": 1,
+          "section": "GitHub REST API Reference \u2014 old-version",
+          "chunk_id": "4458",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "202"
+      ],
+      "answer": "On the current API version (2026-03-10), deleting a GitHub App installation returns **`202 Accepted`**. The deletion is processed in the background.",
+      "error": ""
+    },
+    {
+      "id": "gh-012",
+      "question": "On the current API version, how are JavaScript and TypeScript represented in the code scanning default setup languages list?",
+      "problem_type": "retrieval",
+      "mode": "missing_source",
+      "tags": [
+        "github-api",
+        "code-scanning",
+        "current-version"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer correctly states that JavaScript and TypeScript are combined into a single value in the code scanning default setup languages list.",
+      "combined_score": 1.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "current-version.md",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "16541b3a-d990-433b-9064-33593f635593",
+          "document_name": "old-version.md",
+          "page": 1,
+          "section": "GET /repos/{owner}/{repo}/code-scanning/default-setup",
+          "chunk_id": "7515",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "GET /repos/{owner}/{repo}/code-scanning/default-setup",
+          "chunk_id": "5131",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "GitHub REST API Reference \u2014 current-version",
+          "chunk_id": "6446",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "16541b3a-d990-433b-9064-33593f635593",
+          "document_name": "old-version.md",
+          "page": 1,
+          "section": "GitHub REST API Reference \u2014 old-version",
+          "chunk_id": "2158",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "16541b3a-d990-433b-9064-33593f635593",
+          "document_name": "old-version.md",
+          "page": 1,
+          "section": "GitHub REST API Reference \u2014 old-version",
+          "chunk_id": "4458",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "javascript-typescript"
+      ],
+      "answer": "In the current API version, JavaScript and TypeScript are combined into a single value, \"**javascript-typescript**\", in the code scanning default setup languages list. \n\nFor example: \n```json\n{\n  \"state\": \"configured\",\n  \"languages\": [\"javascript-typescript\", \"python\"]\n}\n```",
+      "error": ""
+    },
+    {
+      "id": "gh-013",
+      "question": "What changed about attestation list responses between API Version 2022-11-28 and 2026-03-10?",
+      "problem_type": "retrieval",
+      "mode": "poor_context",
+      "tags": [
+        "github-api",
+        "attestations",
+        "comparison"
+      ],
+      "regression": false,
+      "regression_evidence": null,
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": "pass",
+      "judge_reasoning": "The answer correctly explains the change in attestation list responses between the two API versions.",
+      "combined_score": 1.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "faithfulness": null,
+      "context_precision": null,
+      "expected_sources": [
+        {
+          "document": "old-version.md",
+          "page": 1
+        },
+        {
+          "document": "current-version.md",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "GitHub REST API Reference \u2014 current-version",
+          "chunk_id": "6446",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "GET /repos/{owner}/{repo}/attestations/{subject_digest}",
+          "chunk_id": "350",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "16541b3a-d990-433b-9064-33593f635593",
+          "document_name": "old-version.md",
+          "page": 1,
+          "section": "GitHub REST API Reference \u2014 old-version",
+          "chunk_id": "2158",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "b9928b5f-817a-4134-b5a8-d12b7ccbee97",
+          "document_name": "current-version.md",
+          "page": 1,
+          "section": "POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches",
+          "chunk_id": "1045",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "16541b3a-d990-433b-9064-33593f635593",
+          "document_name": "old-version.md",
+          "page": 1,
+          "section": "GitHub REST API Reference \u2014 old-version",
+          "chunk_id": "4458",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "bundle",
+        "bundle_url"
+      ],
+      "answer": "Between API Version 2022-11-28 and 2026-03-10, the **`bundle` property was removed** from attestation list responses. Instead, the **`bundle_url`** property is used to retrieve the attestation bundle. In the new version, you need to fetch the bundle from `bundle_url` rather than reading it inline from `bundle`.",
+      "error": ""
+    }
+  ]
+}

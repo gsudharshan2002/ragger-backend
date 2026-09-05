@@ -14,6 +14,34 @@ logger = get_logger(__name__)
 
 COHERE_RERANK_URL = "https://api.cohere.com/v2/rerank"
 
+# Keyword hits in BM25 score as if they appeared KEYWORD_BOOST times in the
+# chunk's character text, so a chunk whose stored metadata keywords match the
+# query outranks plain content-only matches.
+KEYWORD_BOOST = 3
+
+# English stopwords dropped from BM25 *query* terms so the terms shown alongside
+# a question actually reflect what the question asks ("does the publisher..." ->
+# ["publisher", "protocol", "subscriber", "value", "events"] instead of
+# ["does", "the", "publisher", ...]). They contribute only noise to scoring
+# anyway (near-universal document frequency -> tiny IDF).
+_QUERY_STOPWORDS = frozenset(
+    """
+    a about above after again against all am an and any are aren't as at be
+    because been before being below between both but by can't cannot could
+    couldn't did didn't do does doesn't doing don't down during each few for
+    from further had hadn't has hasn't have haven't having he he'd he'll he's
+    her here here's hers herself him himself his how how's i i'd i'll i'm i've
+    if in into is isn't it it's its itself let's me more most mustn't my myself
+    no nor not of off on once only or other ought our ours ourselves out over
+    own same shan't she she'd she'll she's should shouldn't so some such than
+    that that's the their theirs them themselves then there there's these they
+    they'd they'll they're they've this those through to too under until up
+    very was wasn't we we'd we'll we're we've were weren't what what's when
+    when's where where's which while who who's whom why why's with won't would
+    wouldn't you you'd you'll you're you've your yours yourself yourselves
+    """.split()
+)
+
 if TYPE_CHECKING:
     from sentence_transformers import CrossEncoder
 
@@ -46,6 +74,7 @@ class BM25Result:
     score: float
     rank: int = 0
     query_terms: list[str] = field(default_factory=list)
+    matched_keywords: list[str] = field(default_factory=list)
     method: str = "bm25"
 
 
@@ -164,6 +193,15 @@ def _tokenize(text: str, tokenizer: str = "standard") -> list[str]:
     return tokens
 
 
+def _query_terms(query: str, tokenizer: str = "standard") -> list[str]:
+    """Tokenize a search query and drop stopwords, so the terms reported and
+    scored for a question are its meaningful content words. Falls back to the
+    raw tokens if every token is a stopword (e.g. a query like "what is")."""
+    tokens = _tokenize(query, tokenizer)
+    meaningful = [t for t in tokens if t not in _QUERY_STOPWORDS]
+    return meaningful if meaningful else tokens
+
+
 def bm25_search(
     query: str,
     chunks: list[StoredChunk],
@@ -174,12 +212,18 @@ def bm25_search(
     if not chunks:
         return []
 
-    query_tokens = _tokenize(query, tokenizer)
+    query_tokens = _query_terms(query, tokenizer)
 
-    # Build corpus
+    # Build corpus - each chunk scores against its full text PLUS its stored
+    # metadata keywords, so keyword matches get extra weight (KEYWORD_BOOST).
     corpus = []
+    chunk_keywords = []
     for chunk in chunks:
-        corpus.append(_tokenize(chunk.content, tokenizer))
+        keywords = list(chunk.metadata.get("keywords") or [])
+        keyword_tokens = _tokenize(" ".join(keywords), tokenizer) if keywords else []
+        content_tokens = _tokenize(chunk.content, tokenizer)
+        corpus.append(content_tokens + keyword_tokens * KEYWORD_BOOST)
+        chunk_keywords.append(keywords)
 
     # Calculate IDF
     n_docs = len(corpus)
@@ -218,6 +262,14 @@ def bm25_search(
             denominator = tf + k1 * (1 - b + b * (doc_len / avgdl))
             score += idf[token] * (numerator / denominator)
 
+        matched_keywords = []
+        if chunk_keywords[i]:
+            query_set = set(query_tokens)
+            for kw in chunk_keywords[i]:
+                kw_tokens = set(_tokenize(kw, tokenizer))
+                if query_set & kw_tokens:
+                    matched_keywords.append(kw)
+
         if score > 0:
             scored.append(
                 BM25Result(
@@ -225,6 +277,7 @@ def bm25_search(
                     chunk_id=chunk.id,
                     score=score,
                     query_terms=query_tokens,
+                    matched_keywords=matched_keywords,
                     method="bm25",
                 )
             )
@@ -375,12 +428,19 @@ def mmr_selection(
 
     selected: list[int] = []
     selected_embeddings = []
+    # The actual mmr value (relevance minus diversity penalty) and the
+    # max-similarity-to-already-selected that produced it, for whichever
+    # candidate wins each round - both are otherwise local to this loop
+    # and would be lost instead of ending up on the returned MMRResult.
+    mmr_by_idx: dict[int, float] = {}
+    max_sim_by_idx: dict[int, float] = {}
 
     remaining = list(range(len(candidates)))
 
     while len(selected) < final_count and remaining:
         best_idx = -1
         best_mmr = float("-inf")
+        best_max_sim = 0.0
 
         for idx in remaining:
             relevance = normalized_scores[idx]
@@ -398,11 +458,14 @@ def mmr_selection(
             if mmr > best_mmr:
                 best_mmr = mmr
                 best_idx = idx
+                best_max_sim = max_sim
 
         if best_idx == -1:
             break
 
         selected.append(best_idx)
+        mmr_by_idx[best_idx] = best_mmr
+        max_sim_by_idx[best_idx] = best_max_sim
         if candidates[best_idx].embedding:
             selected_embeddings.append(candidates[best_idx].embedding)
         remaining.remove(best_idx)
@@ -413,11 +476,36 @@ def mmr_selection(
             MMRResult(
                 chunk_id=candidates[idx].id,
                 chunk=candidates[idx],
-                mmr_score=normalized_scores[idx],
+                mmr_score=mmr_by_idx[idx],
                 relevance_score=normalized_scores[idx],
-                max_similarity=0.0,
+                max_similarity=max_sim_by_idx[idx],
                 selected=True,
                 rank=rank + 1,
+                method="mmr",
+            )
+        )
+
+    # Candidates never chosen - reported too (selected=False) so
+    # "rejected_count" telemetry downstream reflects reality instead of
+    # always reading zero. Scored against the FINAL selected set, since
+    # that's the only single well-defined comparison point for a chunk
+    # that was never itself added to the growing selected set.
+    for idx in remaining:
+        relevance = normalized_scores[idx]
+        max_sim = 0.0
+        for sel_emb in selected_embeddings:
+            if candidates[idx].embedding and sel_emb:
+                max_sim = max(max_sim, cosine_similarity(candidates[idx].embedding, sel_emb))
+        mmr = lambda_ * relevance - (1 - lambda_) * max_sim
+        results.append(
+            MMRResult(
+                chunk_id=candidates[idx].id,
+                chunk=candidates[idx],
+                mmr_score=mmr,
+                relevance_score=relevance,
+                max_similarity=max_sim,
+                selected=False,
+                rank=0,
                 method="mmr",
             )
         )
