@@ -1,0 +1,280 @@
+openapi: 3.0.3
+info:
+  title: GitHub REST API (subset)
+  description: >
+    A minimal OpenAPI spec covering only the endpoints affected by the
+    2026-03-10 breaking-changes release, reflecting their current-version
+    (2026-03-10) shape. Used as ground truth for the "does this endpoint
+    actually exist" deterministic assertion in the Week 6 eval - not a full
+    mirror of GitHub's real API.
+  version: "2026-03-10"
+servers:
+  - url: https://api.github.com
+paths:
+  /rate_limit:
+    get:
+      operationId: get-rate-limit
+      summary: Get rate limit status for the authenticated user
+      responses:
+        "200":
+          description: Rate limit status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  resources:
+                    type: object
+                    properties:
+                      core:
+                        type: object
+                        properties:
+                          limit: { type: integer }
+                          remaining: { type: integer }
+                          reset: { type: integer }
+
+  /orgs/{org}/teams:
+    post:
+      operationId: create-team
+      summary: Create a team
+      parameters:
+        - name: org
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+      responses:
+        "201":
+          description: Team created
+
+  /repos/{owner}/{repo}/contents/{path}:
+    get:
+      operationId: get-repo-content
+      summary: Get repository content
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema: { type: string }
+        - name: repo
+          in: path
+          required: true
+          schema: { type: string }
+        - name: path
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Content item
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name: { type: string }
+                  type: { type: string, enum: [file, dir, symlink, submodule] }
+                  submodule_git_url: { type: string }
+
+  /repos/{owner}/{repo}:
+    get:
+      operationId: get-repo
+      summary: Get a repository
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema: { type: string }
+        - name: repo
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Repository
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: integer }
+                  name: { type: string }
+
+  /repos/{owner}/{repo}/pulls/{pull_number}:
+    get:
+      operationId: get-pull-request
+      summary: Get a pull request
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema: { type: string }
+        - name: repo
+          in: path
+          required: true
+          schema: { type: string }
+        - name: pull_number
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Pull request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  number: { type: integer }
+                  state: { type: string }
+                  merged: { type: boolean }
+
+  /repos/{owner}/{repo}/issues/{issue_number}:
+    get:
+      operationId: get-issue
+      summary: Get an issue
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema: { type: string }
+        - name: repo
+          in: path
+          required: true
+          schema: { type: string }
+        - name: issue_number
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Issue
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  number: { type: integer }
+                  assignees:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        login: { type: string }
+
+  /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches:
+    post:
+      operationId: create-workflow-dispatch
+      summary: Create a workflow dispatch event
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema: { type: string }
+        - name: repo
+          in: path
+          required: true
+          schema: { type: string }
+        - name: workflow_id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ref]
+              properties:
+                ref: { type: string }
+      responses:
+        "200":
+          description: Workflow run created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: integer }
+                  status: { type: string }
+                  workflow_id: { type: integer }
+
+  /app/installations/{installation_id}:
+    delete:
+      operationId: delete-installation
+      summary: Delete an installation
+      parameters:
+        - name: installation_id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "202":
+          description: Deletion accepted, processed in the background
+
+  /repos/{owner}/{repo}/code-scanning/default-setup:
+    get:
+      operationId: get-code-scanning-default-setup
+      summary: Get code scanning default setup configuration
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema: { type: string }
+        - name: repo
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Default setup configuration
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  state: { type: string }
+                  languages:
+                    type: array
+                    items:
+                      type: string
+                      enum: [javascript-typescript, python, ruby, go, java, csharp, swift]
+
+  /repos/{owner}/{repo}/attestations/{subject_digest}:
+    get:
+      operationId: list-attestations
+      summary: List attestations for a subject digest
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema: { type: string }
+        - name: repo
+          in: path
+          required: true
+          schema: { type: string }
+        - name: subject_digest
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Attestations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  attestations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        bundle_url: { type: string }

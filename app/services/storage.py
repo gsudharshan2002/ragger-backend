@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 import shutil
+import tempfile
 from datetime import datetime, timezone
 from typing import Optional
 from uuid import uuid4
@@ -31,6 +32,28 @@ _kb_cache: dict[str, KnowledgeBase] = {}
 _dataset_cache: dict[str, Dataset] = {}
 
 _initialized = False
+
+
+def _atomic_write_json(path: str, data) -> None:
+    """Write JSON to `path` atomically: serialize to a temp file in the
+    same directory, then os.replace() it into place. A reader always sees
+    either the complete old file or the complete new one, never a
+    half-written file from an interrupted or concurrently-racing write -
+    the plain open(path, "w") this replaces offered no such guarantee, and
+    would corrupt the file if two processes (e.g. multiple server workers)
+    ever wrote it at the same time."""
+    directory = os.path.dirname(path) or "."
+    fd, tmp_path = tempfile.mkstemp(dir=directory, prefix=".tmp-", suffix=".json")
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump(data, f, default=str)
+        os.replace(tmp_path, path)
+    except BaseException:
+        try:
+            os.remove(tmp_path)
+        except OSError:
+            pass
+        raise
 
 
 async def _ensure_dirs():
@@ -94,26 +117,22 @@ async def _load_all():
 
 async def _save_chunks():
     chunks_file = os.path.join(CHUNKS_DIR, "chunks.json")
-    with open(chunks_file, "w") as f:
-        json.dump([c.model_dump() for c in _chunks_cache], f, default=str)
+    _atomic_write_json(chunks_file, [c.model_dump() for c in _chunks_cache])
 
 
 async def _save_documents():
     docs_file = os.path.join(DOCUMENTS_DIR, "documents.json")
-    with open(docs_file, "w") as f:
-        json.dump([d.model_dump() for d in _documents_cache.values()], f, default=str)
+    _atomic_write_json(docs_file, [d.model_dump() for d in _documents_cache.values()])
 
 
 async def _save_kbs():
     kb_file = os.path.join(KB_DIR, "knowledge_bases.json")
-    with open(kb_file, "w") as f:
-        json.dump([k.model_dump() for k in _kb_cache.values()], f, default=str)
+    _atomic_write_json(kb_file, [k.model_dump() for k in _kb_cache.values()])
 
 
 async def _save_datasets():
     ds_file = os.path.join(DATASETS_DIR, "datasets.json")
-    with open(ds_file, "w") as f:
-        json.dump([d.model_dump() for d in _dataset_cache.values()], f, default=str)
+    _atomic_write_json(ds_file, [d.model_dump() for d in _dataset_cache.values()])
 
 
 async def get_all_chunks() -> list[StoredChunk]:
@@ -175,6 +194,61 @@ async def delete_document(doc_id: str) -> bool:
     return False
 
 
+async def clear_all_document_data() -> dict:
+    """Delete everything file-related: uploaded documents and their source
+    files on disk, chunks, per-document versions/history files, knowledge
+    bases and folders. Settings, datasets, benchmark results and trace runs
+    are deliberately left untouched. Returns the number of records removed
+    for each category."""
+    await init_storage()
+    global _chunks_cache, _documents_cache, _kb_cache, _folders_cache
+
+    doc_count = len(_documents_cache)
+    for doc in list(_documents_cache.values()):
+        if doc.path and os.path.exists(doc.path):
+            try:
+                os.remove(doc.path)
+            except OSError as exc:
+                logger.warning(f"Failed to remove document file {doc.path}: {exc}")
+    _documents_cache = {}
+    await _save_documents()
+
+    chunk_count = len(_chunks_cache)
+    _chunks_cache = []
+    await _save_chunks()
+
+    kb_count = len(_kb_cache)
+    _kb_cache = {}
+    await _save_kbs()
+
+    await _load_folders()
+    folder_count = len(_folders_cache)
+    _folders_cache = []
+    await _save_folders()
+
+    removed_meta = 0
+    if os.path.isdir(DOCUMENTS_DIR):
+        for fname in os.listdir(DOCUMENTS_DIR):
+            if fname.endswith("_versions.json") or fname.endswith("_history.json"):
+                try:
+                    os.remove(os.path.join(DOCUMENTS_DIR, fname))
+                    removed_meta += 1
+                except OSError:
+                    pass
+
+    logger.info(
+        f"Cleared all document data: {doc_count} documents, {chunk_count} chunks, "
+        f"{kb_count} knowledge bases, {folder_count} folders, {removed_meta} metadata files"
+    )
+    return {
+        "documents": doc_count,
+        "chunks": chunk_count,
+        "knowledgeBases": kb_count,
+        "folders": folder_count,
+        "metadataFiles": removed_meta,
+    }
+
+
 async def add_chunks(chunks: list[StoredChunk]) -> list[StoredChunk]:
     await init_storage()
     global _chunks_cache
@@ -193,6 +267,21 @@ async def update_chunk_embeddings(embeddings_by_id: dict[str, list[float]]) -> i
         new_embedding = embeddings_by_id.get(chunk.id)
         if new_embedding is not None:
             chunk.embedding = new_embedding
+            updated += 1
+    if updated:
+        await _save_chunks()
+    return updated
+
+
+async def update_chunk_keywords(keywords_by_id: dict[str, list[str]]) -> int:
+    """Backfill or refresh stored metadata keywords for existing chunks in
+    place, keyed by chunk id. Existing keywords are replaced, never merged."""
+    await init_storage()
+    updated = 0
+    for chunk in _chunks_cache:
+        new_keywords = keywords_by_id.get(chunk.id)
+        if new_keywords is not None:
+            chunk.metadata["keywords"] = new_keywords
             updated += 1
     if updated:
         await _save_chunks()
@@ -305,8 +394,10 @@ async def get_settings() -> dict:
         "llmProvider": settings.LLM_PROVIDER,
         "groqModel": settings.GROQ_MODEL,
         "geminiModel": settings.GEMINI_MODEL,
+        "openrouterModel": settings.OPENROUTER_MODEL,
         "groqApiKey": settings.GROQ_API_KEY,
         "geminiApiKey": settings.GEMINI_API_KEY,
+        "openrouterApiKey": settings.OPENROUTER_API_KEY,
         "embeddingProvider": settings.EMBEDDING_PROVIDER,
         "embeddingModel": settings.EMBEDDING_MODEL,
         "cohereEmbedModel": settings.COHERE_EMBED_MODEL,
@@ -333,22 +424,65 @@ async def update_settings(updates: dict) -> dict:
     current = await get_settings()
     current.update(updates)
     _settings_cache = current
-    with open(SETTINGS_FILE, "w") as f:
-        json.dump(current, f, default=str)
+    _atomic_write_json(SETTINGS_FILE, current)
     return current
 
 
 # ===================== Traces =====================
 TRACES_FILE = os.path.join(DATA_DIR, "traces.json")
+TRACES_JSONL_FILE = os.path.join(DATA_DIR, "traces.jsonl")
 _traces_cache: list[dict] = []
 _traces_loaded = False
+
+
+def _atomic_write_jsonl(path: str, lines: list[str]) -> None:
+    """Write JSONL atomically: lines is a list of already-serialized JSON strings."""
+    directory = os.path.dirname(path) or "."
+    fd, tmp_path = tempfile.mkstemp(dir=directory, prefix=".tmp-", suffix=".jsonl")
+    try:
+        with os.fdopen(fd, "w") as f:
+            for line in lines:
+                f.write(line + "\n")
+        os.replace(tmp_path, path)
+    except BaseException:
+        try:
+            os.remove(tmp_path)
+        except OSError:
+            pass
+        raise
+
+
+def _migrate_json_to_jsonl():
+    """One-time migration: read traces.json, write traces.jsonl, rename
+    the old file to traces.json.bak so it's never read again."""
+    if not os.path.exists(TRACES_FILE) or os.path.exists(TRACES_JSONL_FILE):
+        return
+    try:
+        with open(TRACES_FILE) as f:
+            data = json.load(f)
+        lines = [json.dumps(t, default=str) for t in data]
+        _atomic_write_jsonl(TRACES_JSONL_FILE, lines)
+        os.rename(TRACES_FILE, TRACES_FILE + ".bak")
+    except Exception:
+        pass
 
 
 async def _load_traces():
     global _traces_cache, _traces_loaded
     if _traces_loaded:
         return
-    if os.path.exists(TRACES_FILE):
+    _migrate_json_to_jsonl()
+    if os.path.exists(TRACES_JSONL_FILE):
+        try:
+            _traces_cache = []
+            with open(TRACES_JSONL_FILE) as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        _traces_cache.append(json.loads(line))
+        except Exception:
+            _traces_cache = []
+    elif os.path.exists(TRACES_FILE):
         try:
             with open(TRACES_FILE) as f:
                 _traces_cache = json.load(f)
@@ -358,8 +492,8 @@ async def _load_traces():
 
 
 async def _save_traces():
-    with open(TRACES_FILE, "w") as f:
-        json.dump(_traces_cache, f, default=str)
+    lines = [json.dumps(t, default=str) for t in _traces_cache]
+    _atomic_write_jsonl(TRACES_JSONL_FILE, lines)
 
 
 async def list_traces(limit: int = 50) -> list[dict]:
@@ -408,8 +542,7 @@ async def add_document_version(doc_id: str, version: dict) -> dict:
     versions = await get_document_versions(doc_id)
     versions.append(version)
     versions_file = os.path.join(DOCUMENTS_DIR, f"{doc_id}_versions.json")
-    with open(versions_file, "w") as f:
-        json.dump(versions, f, default=str)
+    _atomic_write_json(versions_file, versions)
     return version
 
 
@@ -453,8 +586,7 @@ async def add_processing_history(doc_id: str, event: dict) -> dict:
     history = await get_document_history(doc_id)
     history.append(event)
     history_file = os.path.join(DOCUMENTS_DIR, f"{doc_id}_history.json")
-    with open(history_file, "w") as f:
-        json.dump(history, f, default=str)
+    _atomic_write_json(history_file, history)
     return event
 
 
@@ -478,8 +610,7 @@ async def _load_folders():
 
 
 async def _save_folders():
-    with open(FOLDERS_FILE, "w") as f:
-        json.dump(_folders_cache, f, default=str)
+    _atomic_write_json(FOLDERS_FILE, _folders_cache)
 
 
 async def get_kb_folders(kb_id: str) -> list[dict]:
@@ -522,8 +653,7 @@ async def _load_results():
 
 
 async def _save_results():
-    with open(RESULTS_FILE, "w") as f:
-        json.dump(_results_cache, f, default=str)
+    _atomic_write_json(RESULTS_FILE, _results_cache)
 
 
 async def list_benchmark_results() -> list[dict]:

@@ -1,0 +1,571 @@
+{
+  "track": "developer-documentation",
+  "label": "developer_docs_cases",
+  "cases_file": "developer_docs_cases.json",
+  "strategy": "hybrid-rerank-mmr",
+  "created_at": "2026-09-03T16:51:50.350508+00:00",
+  "summary": {
+    "retrieval_score": 0.1538,
+    "answer_score": 0.1538,
+    "combined_score": 0.1538,
+    "problem_type_scores": {
+      "answer_quality": {
+        "cases": 6,
+        "combined_score": 0.1667
+      },
+      "retrieval": {
+        "cases": 7,
+        "combined_score": 0.1429
+      }
+    },
+    "mode_scores": {
+      "unknown": {
+        "cases": 13,
+        "passed": 2,
+        "pass_rate": 0.1538
+      }
+    }
+  },
+  "results": [
+    {
+      "id": "combine-001",
+      "question": "What does the Combine framework provide?",
+      "problem_type": "answer_quality",
+      "mode": "unknown",
+      "tags": [
+        "combine",
+        "framework-overview"
+      ],
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": null,
+      "judge_reasoning": "",
+      "combined_score": 1.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "0725be3e-f12c-40f7-b124-101a41eaf47f",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "eb603e2c-4ed9-42e6-b039-92056b6c568e",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "b8facd33-692a-4ffd-9f3e-168f3f78d04f",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 5,
+          "section": "Schedulers",
+          "chunk_id": "adc2e3af-3e16-40a0-a2fa-ccd4e3c069a8",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 2,
+          "section": "Combine",
+          "chunk_id": "2e1daa1b-ece7-4af3-99a3-04b479fc879b",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "declarative",
+        "swift api",
+        "values over time"
+      ],
+      "answer": "The Combine framework provides a declarative Swift API for processing values over time, allowing you to work with many kinds of asynchronous events.\u202f[Source\u202f1]",
+      "error": ""
+    },
+    {
+      "id": "combine-002",
+      "question": "What does the Publisher protocol declare?",
+      "problem_type": "retrieval",
+      "mode": "unknown",
+      "tags": [
+        "combine",
+        "publishers"
+      ],
+      "status": "passed",
+      "retrieval_score": 1.0,
+      "answer_score": 1.0,
+      "keyword_answer_score": 1.0,
+      "judge_verdict": null,
+      "judge_reasoning": "",
+      "combined_score": 1.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 1
+        }
+      ],
+      "actual_sources": [
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 1,
+          "section": null,
+          "chunk_id": "0725be3e-f12c-40f7-b124-101a41eaf47f",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 3,
+          "section": "Controlling Publishing with Connectable Publishers",
+          "chunk_id": "71a5e0c9-96df-4809-9d7c-e4e39eebcb38",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 5,
+          "section": "Using Combine for Your App\u02bcs Asynchronous Code",
+          "chunk_id": "07bd3afc-3c2f-4085-8464-3cb87fde2a0f",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 2,
+          "section": "Combine",
+          "chunk_id": "2e1daa1b-ece7-4af3-99a3-04b479fc879b",
+          "retrieval_method": "final",
+          "score": 0.0
+        },
+        {
+          "document_id": "907f917b-3caa-4157-b94d-208635baaea9",
+          "document_name": "Combine | Apple Developer Documentation.pdf",
+          "page": 4,
+          "section": "Subscribers",
+          "chunk_id": "a68a13c0-41b2-4f66-820b-d0638841b05f",
+          "retrieval_method": "final",
+          "score": 0.0
+        }
+      ],
+      "expected_answer_keywords": [
+        "sequence of values",
+        "over time"
+      ],
+      "answer": "The\u202fPublisher\u202fprotocol declares that a type can deliver (or transmit) a sequence of values over time\u3010Source\u202f1\u3011\u3010Source\u202f4\u3011.",
+      "error": ""
+    },
+    {
+      "id": "combine-003",
+      "question": "What does a Subscriber do at the end of a chain of publishers?",
+      "problem_type": "retrieval",
+      "mode": "unknown",
+      "tags": [
+        "combine",
+        "subscribers"
+      ],
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": null,
+      "judge_reasoning": "",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 1
+        }
+      ],
+      "actual_sources": [],
+      "expected_answer_keywords": [
+        "acts on elements",
+        "receives"
+      ],
+      "answer": "",
+      "error": "gemini API error (404): [{\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.6-flash for the latest features and improvements. We recommend you to use the Interactions API.\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n]"
+    },
+    {
+      "id": "combine-004",
+      "question": "What are the benefits of adopting Combine in your code?",
+      "problem_type": "answer_quality",
+      "mode": "unknown",
+      "tags": [
+        "combine",
+        "framework-overview"
+      ],
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": null,
+      "judge_reasoning": "",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 2
+        }
+      ],
+      "actual_sources": [],
+      "expected_answer_keywords": [
+        "easier to read",
+        "maintain"
+      ],
+      "answer": "",
+      "error": "gemini API error (404): [{\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.6-flash for the latest features and improvements. We recommend you to use the Interactions API.\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n]"
+    },
+    {
+      "id": "combine-005",
+      "question": "What is AnyPublisher in Combine?",
+      "problem_type": "retrieval",
+      "mode": "unknown",
+      "tags": [
+        "combine",
+        "publishers"
+      ],
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": null,
+      "judge_reasoning": "",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 2
+        }
+      ],
+      "actual_sources": [],
+      "expected_answer_keywords": [
+        "type erasure",
+        "wrapping"
+      ],
+      "answer": "",
+      "error": "gemini API error (404): [{\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.6-flash for the latest features and improvements. We recommend you to use the Interactions API.\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n]"
+    },
+    {
+      "id": "combine-006",
+      "question": "What does the Future class do in Combine?",
+      "problem_type": "answer_quality",
+      "mode": "unknown",
+      "tags": [
+        "combine",
+        "publishers"
+      ],
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": null,
+      "judge_reasoning": "",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 3
+        }
+      ],
+      "actual_sources": [],
+      "expected_answer_keywords": [
+        "single value",
+        "finishes",
+        "fails"
+      ],
+      "answer": "",
+      "error": "gemini API error (404): [{\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.6-flash for the latest features and improvements. We recommend you to use the Interactions API.\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n]"
+    },
+    {
+      "id": "combine-007",
+      "question": "What does the Subscriber protocol declare?",
+      "problem_type": "retrieval",
+      "mode": "unknown",
+      "tags": [
+        "combine",
+        "subscribers"
+      ],
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": null,
+      "judge_reasoning": "",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 4
+        }
+      ],
+      "actual_sources": [],
+      "expected_answer_keywords": [
+        "receive input",
+        "publisher"
+      ],
+      "answer": "",
+      "error": "gemini API error (404): [{\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.6-flash for the latest features and improvements. We recommend you to use the Interactions API.\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n]"
+    },
+    {
+      "id": "combine-008",
+      "question": "What is a CurrentValueSubject in Combine?",
+      "problem_type": "answer_quality",
+      "mode": "unknown",
+      "tags": [
+        "combine",
+        "subjects"
+      ],
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": null,
+      "judge_reasoning": "",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 4
+        }
+      ],
+      "actual_sources": [],
+      "expected_answer_keywords": [
+        "wraps a single value",
+        "publishes a new element"
+      ],
+      "answer": "",
+      "error": "gemini API error (404): [{\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.6-flash for the latest features and improvements. We recommend you to use the Interactions API.\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n]"
+    },
+    {
+      "id": "combine-009",
+      "question": "How can values be emitted at regular time intervals without writing a raw timer callback yourself?",
+      "problem_type": "retrieval",
+      "mode": "unknown",
+      "tags": [
+        "combine",
+        "timers",
+        "schedulers"
+      ],
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": null,
+      "judge_reasoning": "",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 5
+        }
+      ],
+      "actual_sources": [],
+      "expected_answer_keywords": [
+        "timer",
+        "periodically",
+        "publisher"
+      ],
+      "answer": "",
+      "error": "gemini API error (404): [{\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.6-flash for the latest features and improvements. We recommend you to use the Interactions API.\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n]"
+    },
+    {
+      "id": "combine-010",
+      "question": "How can property changes tracked through Objective-C's Key-Value Observing mechanism be turned into a stream of values?",
+      "problem_type": "retrieval",
+      "mode": "unknown",
+      "tags": [
+        "combine",
+        "kvo"
+      ],
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": null,
+      "judge_reasoning": "",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 5
+        }
+      ],
+      "actual_sources": [],
+      "expected_answer_keywords": [
+        "key-value observing",
+        "kvo",
+        "publisher"
+      ],
+      "answer": "",
+      "error": "gemini API error (404): [{\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.6-flash for the latest features and improvements. We recommend you to use the Interactions API.\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n]"
+    },
+    {
+      "id": "combine-011",
+      "question": "How would system notifications be delivered to subscribers instead of using NotificationCenter's traditional observer API directly?",
+      "problem_type": "answer_quality",
+      "mode": "unknown",
+      "tags": [
+        "combine",
+        "notifications"
+      ],
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": null,
+      "judge_reasoning": "",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 5
+        }
+      ],
+      "actual_sources": [],
+      "expected_answer_keywords": [
+        "notification center",
+        "publisher",
+        "subscribers"
+      ],
+      "answer": "",
+      "error": "gemini API error (404): [{\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.6-flash for the latest features and improvements. We recommend you to use the Interactions API.\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n]"
+    },
+    {
+      "id": "combine-012",
+      "question": "What protocol would you conform to if you needed custom logic for turning Swift values into a serialized data format?",
+      "problem_type": "retrieval",
+      "mode": "unknown",
+      "tags": [
+        "combine",
+        "encoding"
+      ],
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": null,
+      "judge_reasoning": "",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 6
+        }
+      ],
+      "actual_sources": [],
+      "expected_answer_keywords": [
+        "encoding",
+        "encoder"
+      ],
+      "answer": "",
+      "error": "gemini API error (404): [{\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.6-flash for the latest features and improvements. We recommend you to use the Interactions API.\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n]"
+    },
+    {
+      "id": "combine-013",
+      "question": "How can a publisher's emitted values be consumed using Swift's async/await syntax instead of its own subscriber APIs?",
+      "problem_type": "answer_quality",
+      "mode": "unknown",
+      "tags": [
+        "combine",
+        "async-await"
+      ],
+      "status": "failed",
+      "retrieval_score": 0.0,
+      "answer_score": 0.0,
+      "keyword_answer_score": 0.0,
+      "judge_verdict": null,
+      "judge_reasoning": "",
+      "combined_score": 0.0,
+      "assertions": {
+        "unknown_endpoints": [],
+        "deprecated_without_migration_note": []
+      },
+      "expected_sources": [
+        {
+          "document": "Combine | Apple Developer Documentation.pdf",
+          "page": 6
+        }
+      ],
+      "actual_sources": [],
+      "expected_answer_keywords": [
+        "asynchronous sequence",
+        "async"
+      ],
+      "answer": "",
+      "error": "gemini API error (404): [{\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.6-flash for the latest features and improvements. We recommend you to use the Interactions API.\",\n    \"status\": \"NOT_FOUND\"\n  }\n}\n]"
+    }
+  ]
+}

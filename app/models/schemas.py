@@ -144,6 +144,12 @@ class UploadedDocument(BaseSchema):
     uploaded_at: datetime = Field(default_factory=datetime.utcnow)
     knowledge_base_id: Optional[str] = None
     folder_id: Optional[str] = None
+    # Set when embedding generation failed or returned fewer vectors than
+    # chunks at ingest - the chunks are still stored (BM25 still works on
+    # them), but vector search and MMR diversity silently degrade for them
+    # until the document is reprocessed or embeddings are reindexed. None
+    # means every chunk got a real embedding.
+    embedding_error: Optional[str] = None
 
 
 class KnowledgeBase(BaseSchema):

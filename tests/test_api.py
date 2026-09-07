@@ -96,6 +96,34 @@ def test_document_chunks_endpoint(client):
     assert all("content" in c for c in chunks)
 
 
+def test_chunk_size_and_overlap_respected(client):
+    """Recursive character splitting (see document_processor._chunk_text)
+    should keep chunks close to the configured chunkSize and produce
+    overlapping content between consecutive chunks - not just "some
+    chunks exist", but that the size/overlap settings actually take
+    effect."""
+    small_size, overlap = 100, 20
+    r = client.put("/api/v1/rag/config", json={"chunkSize": small_size, "chunkOverlap": overlap})
+    assert r.status_code == 200, r.text
+
+    doc = upload_text(client, filename="chunking-sample.txt").json()["data"]
+    chunks = client.get(f"/api/v1/documents/{doc['id']}/chunks").json()["data"]
+    assert len(chunks) > 1, "long sample text should split into multiple chunks"
+
+    # Whitespace normalization can add a little slack, but a chunk should
+    # never balloon well past the configured size.
+    for c in chunks:
+        assert len(c["content"]) <= small_size * 2, c["content"]
+
+    # Consecutive chunks should share trailing/leading content (the
+    # overlap), not start exactly where the previous one ended.
+    overlapping_pairs = sum(
+        1 for prev, nxt in zip(chunks, chunks[1:])
+        if set(prev["content"][-overlap:].split()) & set(nxt["content"][:overlap].split())
+    )
+    assert overlapping_pairs > 0, "expected at least one overlapping boundary between chunks"
+
+
 def test_reprocess_and_rechunk_versions(client):
     doc = upload_text(client).json()["data"]
 

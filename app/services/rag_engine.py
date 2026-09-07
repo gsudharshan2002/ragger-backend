@@ -30,7 +30,7 @@ from app.services.search import (
     rrf_fusion,
     rerank_documents,
     mmr_selection,
-    _tokenize,
+    _query_terms,
 )
 from app.services.llm import (
     is_llm_configured,
@@ -125,6 +125,8 @@ async def get_default_rag_config(
     provider = saved_settings.get("llmProvider") or settings.LLM_PROVIDER
     if provider == "gemini":
         llm_model = saved_settings.get("geminiModel") or settings.GEMINI_MODEL
+    elif provider == "openrouter":
+        llm_model = saved_settings.get("openrouterModel") or settings.OPENROUTER_MODEL
     else:
         llm_model = saved_settings.get("groqModel") or settings.GROQ_MODEL
 
@@ -209,6 +211,23 @@ def _truncate_to_tokens(
     )
 
 
+def _relevance_bucket(rank: int, total: int) -> str:
+    """Bucket a chunk's final rank position into high/medium/low, by
+    position rather than raw score - vector cosine similarity, BM25, and
+    cross-encoder rerank scores all live on different, incomparable scales,
+    so a fixed score threshold would mean something different depending on
+    which strategy produced it. Rank-position tertiles work the same way
+    regardless of strategy."""
+    if total <= 1:
+        return "high"
+    fraction = rank / total
+    if fraction < 1 / 3:
+        return "high"
+    if fraction < 2 / 3:
+        return "medium"
+    return "low"
+
+
 def build_prompt(
     query: str,
     context_chunks: list,
@@ -226,26 +245,33 @@ def build_prompt(
     )
 
     limited_chunks = context_chunks[:MAX_CONTEXT_CHUNKS]
+    total_chunks = len(limited_chunks)
 
-    context_parts = []
-
+    source_blocks = []
     for i, chunk in enumerate(limited_chunks):
-        header = (
-            f"[Source {i + 1}] "
-            f"Document: {chunk.document_name}, "
-            f"Page: {chunk.page}, "
-            f"Chunk: {chunk.id}"
-        )
-
+        lines = [
+            f'<source id="{i + 1}">',
+            "  <document>",
+            f"    {chunk.document_name}",
+            "  </document>",
+            f"  <page>{chunk.page}</page>",
+        ]
         if chunk.section:
-            header += f", Section: {chunk.section}"
+            lines.append(f"  <section>{chunk.section}</section>")
+        lines.append(f"  <relevance>{_relevance_bucket(i, total_chunks)}</relevance>")
+        lines.append("")
+        lines.append("  <content>")
+        lines.append(f"    {chunk.content}")
+        lines.append("  </content>")
+        lines.append("</source>")
+        source_blocks.append("\n".join(lines))
 
-        context_parts.append(
-            f"{header}\n{chunk.content}"
-        )
-
-    context = "\n\n".join(context_parts)
-    context = f"<context>\n{context}\n</context>" if context else "<context></context>"
+    context_body = "\n\n".join(source_blocks)
+    context = (
+        f"<retrieved_context>\n\n{context_body}\n\n</retrieved_context>"
+        if context_body
+        else "<retrieved_context></retrieved_context>"
+    )
 
     context = _truncate_to_tokens(
         context,
@@ -550,7 +576,7 @@ async def execute_rag(
             {
                 "top_k": config.bm25.top_k,
                 "language": config.bm25.language,
-                "query_terms": _tokenize(query)[:5],
+                "query_terms": _query_terms(query, config.bm25.tokenizer),
             },
         )
 
@@ -574,9 +600,9 @@ async def execute_rag(
                         r.chunk.document_name
                     ),
                     "page": r.chunk.page,
-                    "query_terms": (
-                        r.query_terms[:5]
-                    ),
+                    "query_terms": r.query_terms,
+                    "keywords": r.chunk.metadata.get("keywords", []) or [],
+                    "matched_keywords": r.matched_keywords or [],
                 },
             )
 
@@ -1402,6 +1428,8 @@ async def _finalize_trace(
                     "page": r.chunk.page,
                     "score": r.score,
                     "rank": r.rank,
+                    "keywords": r.chunk.metadata.get("keywords", []) or [],
+                    "matched_keywords": r.matched_keywords or [],
                 }
                 for r in bm25_results
             ],
