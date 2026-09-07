@@ -61,6 +61,10 @@ class Settings(BaseSettings):
     # MMR
     MMR_LAMBDA: float = 0.7
 
+    # Agent (ReAct)
+    AGENT_MAX_STEPS: int = 5
+    AGENT_TEMPERATURE: float = 0.2
+
     # System Prompt
     SYSTEM_PROMPT: str = (
         "You are a RAG assistant. Answer only using the <source> entries inside the "

@@ -5,6 +5,8 @@ from uuid import UUID, uuid4
 from pydantic import BaseModel, Field, ConfigDict
 from pydantic.alias_generators import to_camel
 
+from app.core.config import settings
+
 
 class BaseSchema(BaseModel):
     """Base model that accepts and emits camelCase field names
@@ -324,3 +326,47 @@ class HealthResponse(BaseSchema):
     status: str
     version: str
     timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+
+class AgentTool(str, Enum):
+    RETRIEVE = "retrieve"
+    ANSWER = "answer"
+    FINISH = "finish"
+
+
+class AgentAction(BaseSchema):
+    tool: AgentTool
+    inputs: dict[str, Any] = Field(default_factory=dict)
+
+
+class AgentObservation(BaseSchema):
+    tool: AgentTool
+    output: dict[str, Any] = Field(default_factory=dict)
+    latency_ms: int = 0
+    error: Optional[str] = None
+
+
+class AgentStep(BaseSchema):
+    step_number: int
+    reason: str
+    action: AgentAction
+    observation: Optional[AgentObservation] = None
+    latency_ms: int = 0
+
+
+class AgentRunRequest(BaseSchema):
+    query: str
+    strategy: Optional[RagStrategy] = None
+    knowledge_base_id: Optional[str] = None
+    max_steps: int = Field(default_factory=lambda: settings.AGENT_MAX_STEPS, ge=1, le=10)
+    temperature: float = Field(default_factory=lambda: settings.AGENT_TEMPERATURE)
+
+
+class AgentRunResponse(BaseSchema):
+    answer: str
+    steps: list[AgentStep] = Field(default_factory=list)
+    total_latency_ms: int = 0
+    input_tokens: int = 0
+    output_tokens: int = 0
+    trace_id: str = Field(default_factory=lambda: str(uuid4()))
+    sources: list[dict[str, Any]] = Field(default_factory=list)
