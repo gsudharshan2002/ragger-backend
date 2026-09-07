@@ -13,6 +13,7 @@ import json
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
 LABELS_PATH = Path(__file__).resolve().parent / "labels_25.json"
@@ -139,10 +140,11 @@ async def run_judge_validation() -> dict[str, Any]:
     graded = [c for c in gradeable if c["judge_verdict"] is not None]
     agreement_rate = round(sum(1 for c in graded if c["agree"]) / len(graded), 4) if graded else 0.0
 
+    validated_at = datetime.now(UTC).isoformat()
     validation = {
         "labels_source_report": labels_data["source_report"],
         "labeled_at": labels_data["labeled_at"],
-        "validated_at": datetime.now(UTC).isoformat(),
+        "validated_at": validated_at,
         "criterion": labels_data["criterion"],
         "agreement_rate": agreement_rate,
         "graded_count": len(graded),
@@ -151,9 +153,9 @@ async def run_judge_validation() -> dict[str, Any]:
         "total_labels": len(comparisons),
         "comparisons": comparisons,
     }
-    output_path = RESULTS_DIR / f"{datetime.now(UTC).strftime('%Y%m%dT%H%M%S')}_judge_validation.json"
+    output_path = RESULTS_DIR / f"{datetime.now(UTC).strftime('%Y%m%dT%H%M%S')}_{uuid4().hex[:8]}_judge_validation.json"
     output_path.write_text(json.dumps(validation, indent=2), encoding="utf-8")
-    return validation
+    return {**validation, "_filename": output_path.name}
 
 
 async def clear_regression_flag(case_id: str) -> dict[str, Any] | None:

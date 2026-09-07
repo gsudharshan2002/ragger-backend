@@ -263,15 +263,7 @@
     "tags": [
       "combine",
       "async-await"
-    ],
-    "regression": true,
-    "regression_evidence": {
-      "report": "20260905T061346_hybrid-rerank-mmr_ca6634aa_overlap_check.json",
-      "observed_at": "2026-09-05T06:13:46Z",
-      "observed_retrieval_score": 0.0,
-      "note": "expected_sources previously said page 6 (fixed to 5: the AsyncPublisher/AsyncThrowingPublisher content, 'Using Combine for Your App's Asynchronous Code', is indexed on page 5 - page 6 only has Encoders and Decoders content). That was a real bug in the test data, but fixing it exposed a second, still-live bug underneath: even scored against the correct page 5, hybrid-rerank-mmr's top-5 retrieval for this exact question returned pages [1, 1, 3, 1, 2] and never page 5 - a genuine, reproduced retrieval miss, not just a mislabeled case. This is why the assistant kept answering 'I couldn't find that information' - it never was a bad-answer problem, it was retrieval never surfacing the right chunk. Not yet fixed.",
-      "fixed_in_version": null
-    }
+    ]
   },
   {
     "id": "combine-014",

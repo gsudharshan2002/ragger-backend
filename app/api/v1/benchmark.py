@@ -1,3 +1,4 @@
+import asyncio
 import json
 import math
 from pathlib import Path
@@ -12,6 +13,8 @@ from app.services.storage import get_all_datasets
 
 router = APIRouter()
 logger = get_logger(__name__)
+
+_run_lock = asyncio.Lock()
 
 _DEVELOPER_DOC_RESULTS_DIR = Path(__file__).resolve().parents[3] / "evals" / "results"
 # Points at the two report files from the most recent POST /run, so GET
@@ -171,43 +174,44 @@ async def run_developer_docs(payload: DeveloperDocsRunRequest) -> dict:
       - knowledgeBaseId: optional - scope retrieval to one knowledge base, same
         as Chat does. Omit to search every chunk in the store (prior behavior).
     """
-    from evals.run_developer_docs import RESULTS_DIR, _latest_previous_run_for_strategy, run_strategy
+    async with _run_lock:
+        from evals.run_developer_docs import RESULTS_DIR, _latest_previous_run_for_strategy, run_strategy
 
-    cases_file = payload.casesFileName or "developer_docs_cases.json"
-    label = Path(cases_file).stem
-    cases = [c.model_dump() for c in payload.cases]
+        cases_file = payload.casesFileName or "developer_docs_cases.json"
+        label = Path(cases_file).stem
+        cases = [c.model_dump() for c in payload.cases]
 
-    improved_report, improved_path = await run_strategy(
-        cases, payload.strategy, use_judge=not payload.noJudge,
-        label=label, cases_file=cases_file, use_ragas=payload.useRagas,
-        knowledge_base_id=payload.knowledgeBaseId,
-    )
-
-    baseline_report: Optional[dict] = None
-    baseline_filename: Optional[str] = None
-    if payload.baselineStrategy:
-        # Explicit override: compare against a genuinely different strategy,
-        # run fresh right now (the old behavior).
-        baseline_report, baseline_path = await run_strategy(
-            cases, payload.baselineStrategy, use_judge=not payload.noJudge,
+        improved_report, improved_path = await run_strategy(
+            cases, payload.strategy, use_judge=not payload.noJudge,
             label=label, cases_file=cases_file, use_ragas=payload.useRagas,
             knowledge_base_id=payload.knowledgeBaseId,
         )
-        baseline_filename = baseline_path.name
-    else:
-        # Default: same-strategy before/after - the most recent PRIOR report
-        # for this exact strategy, not re-executed.
-        previous = _latest_previous_run_for_strategy(RESULTS_DIR, payload.strategy, exclude_path=improved_path)
-        if previous:
-            baseline_filename = previous.pop("_source_path")
-            baseline_report = previous
 
-    data: dict[str, dict] = {"improved": improved_report}
-    if baseline_report:
-        data["baseline"] = baseline_report
-    if baseline_filename:
-        _write_pair_pointer(baseline_filename, improved_path.name)
-    return {"success": True, "data": data}
+        baseline_report: Optional[dict] = None
+        baseline_filename: Optional[str] = None
+        if payload.baselineStrategy:
+            # Explicit override: compare against a genuinely different strategy,
+            # run fresh right now (the old behavior).
+            baseline_report, baseline_path = await run_strategy(
+                cases, payload.baselineStrategy, use_judge=not payload.noJudge,
+                label=label, cases_file=cases_file, use_ragas=payload.useRagas,
+                knowledge_base_id=payload.knowledgeBaseId,
+            )
+            baseline_filename = baseline_path.name
+        else:
+            # Default: same-strategy before/after - the most recent PRIOR report
+            # for this exact strategy, not re-executed.
+            previous = _latest_previous_run_for_strategy(RESULTS_DIR, payload.strategy, exclude_path=improved_path)
+            if previous:
+                baseline_filename = previous.pop("_source_path")
+                baseline_report = previous
+
+        data: dict[str, dict] = {"improved": improved_report}
+        if baseline_report:
+            data["baseline"] = baseline_report
+        # Always write the pointer so GET /results reflects the latest run even when no baseline exists
+        _write_pair_pointer(baseline_filename or "", improved_path.name)
+        return {"success": True, "data": data}
 
 
 class GenerateForLabelingRequest(BaseModel):
