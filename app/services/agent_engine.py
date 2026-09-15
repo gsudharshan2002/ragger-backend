@@ -16,6 +16,7 @@ from app.models.schemas import (
     RagEngineConfig,
     RagStrategy,
 )
+from app.services.agent_tools import ApiVersion, check_deprecation
 from app.services.llm import generate_completion_stream, is_llm_configured
 from app.services.rag_engine import RagEngine, build_prompt, estimate_tokens
 
@@ -25,18 +26,20 @@ REACT_SYSTEM_PROMPT = """You are a ReAct-style research agent that answers quest
 
 You reason step by step in a Thought -> Action -> Observation loop. At each step you must respond with a single JSON object and nothing else - no markdown fences, no commentary before or after it:
 
-{"thought": "<your reasoning about what to do next>", "tool": "<retrieve|answer|finish>", "inputs": {<tool inputs>}}
+{"thought": "<your reasoning about what to do next>", "tool": "<retrieve|check_deprecation|answer|finish>", "inputs": {<tool inputs>}}
 
 Available tools:
 - "retrieve": search the knowledge base for context relevant to the question. inputs: {"query": "<search query>"}
+- "check_deprecation": determine if a specific API endpoint or feature is deprecated or removed in a given API version, and what replaced it. Use when the question asks about version-specific changes like 'Does X still exist in version Y?' or 'Was Z removed in 2026-03-10?'. Do NOT use for general knowledge searches — use retrieve for those. inputs: {"endpoint_or_feature": "<string>", "api_version": "2022-11-28 | 2026-03-10"}
 - "answer": produce the final answer using everything retrieved so far. inputs: {}
 - "finish": stop without producing a new answer (e.g. you already answered in a prior step). inputs: {"message": "<optional note>"}
 
 Rules:
 - Always retrieve at least once before answering, unless earlier steps already retrieved relevant context.
 - Never repeat a "retrieve" call with the same query you already used.
+- Check deprecation status when the question concerns whether something still works on a specific API version.
 - Once you have enough context to answer, call "answer" - do not keep retrieving indefinitely.
-- Respond with ONLY the JSON object described above.
+- Respond with ONLY the JSON object described in the system prompt.
 """
 
 _JSON_BLOCK_RE = re.compile(r"\{.*\}", re.DOTALL)
@@ -210,6 +213,34 @@ class AgentEngine:
                     )
                 except Exception as e:
                     logger.error(f"Agent retrieve failed at step {step_number}: {e}")
+                    observation = AgentObservation(
+                        tool=action.tool,
+                        output={},
+                        latency_ms=int((time.time() - step_start) * 1000),
+                        error=str(e),
+                    )
+
+            elif action.tool == AgentTool.CHECK_DEPRECATION:
+                endpoint_or_feature = action.inputs.get("endpoint_or_feature") or query
+                api_version_str = action.inputs.get("api_version", "2026-03-10")
+                try:
+                    api_version = ApiVersion(api_version_str)
+                except ValueError:
+                    api_version = ApiVersion.CURRENT
+                yield emit(
+                    "agent.action.progress",
+                    {"step_number": step_number, "status": "checking_deprecation", "endpoint": endpoint_or_feature, "api_version": api_version.value},
+                )
+                try:
+                    result = await check_deprecation(endpoint_or_feature, api_version)
+                    retrieved_chunks.extend(result["raw_chunks"])
+                    observation = AgentObservation(
+                        tool=action.tool,
+                        output=result["summary"],
+                        latency_ms=int((time.time() - step_start) * 1000),
+                    )
+                except Exception as e:
+                    logger.error(f"Agent check_deprecation failed at step {step_number}: {e}")
                     observation = AgentObservation(
                         tool=action.tool,
                         output={},

@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     OPENROUTER_MODEL: str = "meta-llama/llama-3.3-70b-instruct"
     LLM_TEMPERATURE: float = 0.7
     LLM_TOP_P: float = 1.0
-    LLM_MAX_TOKENS: int = 1024
+    LLM_MAX_TOKENS: int = 128
 
     # Embeddings
     EMBEDDING_PROVIDER: Literal["local", "cohere"] = "local"

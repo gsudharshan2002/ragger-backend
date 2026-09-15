@@ -151,6 +151,53 @@ class DeveloperDocsRunRequest(BaseModel):
     knowledgeBaseId: Optional[str] = None
 
 
+@router.post("/race")
+async def run_race_endpoint() -> dict:
+    """Run the Task Set E Agent vs Workflow race harness."""
+    from app.services.evaluation.race_harness import run_race
+
+    async with _run_lock:
+        try:
+            summary = await run_race()
+            return {"success": True, "data": summary}
+        except Exception as e:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=500, detail=f"Race failed: {str(e)}")
+
+
+@router.get("/race/results")
+async def get_race_results() -> dict:
+    """Return the latest race details from race_details.csv."""
+    import csv
+    from pathlib import Path
+
+    csv_path = Path(__file__).resolve().parents[3] / "race_details.csv"
+    if not csv_path.exists():
+        return {"success": True, "data": {"agent": [], "workflow": []}}
+
+    agent_rows: list[dict] = []
+    wf_rows: list[dict] = []
+    with open(csv_path, encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            entry = {
+                "system": row["system"],
+                "caseId": row["case_id"],
+                "passed": row["passed"] == "True",
+                "latencyMs": int(row["latency_ms"]),
+                "inputTokens": int(row["input_tokens"]),
+                "outputTokens": int(row["output_tokens"]),
+                "cost": float(row["cost"]),
+                "answer": row["answer"],
+            }
+            if row["system"] == "agent":
+                agent_rows.append(entry)
+            else:
+                wf_rows.append(entry)
+
+    return {"success": True, "data": {"agent": agent_rows, "workflow": wf_rows}}
+
+
 @router.post("/developer-docs/run")
 async def run_developer_docs(payload: DeveloperDocsRunRequest) -> dict:
     """Run the Week 6 developer-documentation eval and persist a fresh

@@ -1,56 +1,93 @@
-"""Concept 10: Summarisation.
+"""Task Set E, Steps 4-5: accurate per-lap token accounting, shared output
+contract, and all four required budgets enforced in the loop.
 
-`reason()` no longer pastes the FULL history into every prompt. Once
-history passes SUMMARIZE_AFTER_STEPS, everything older than the most
-recent KEEP_RECENT_STEPS gets compressed into a short LLM-generated
-summary instead of being sent verbatim - this is the fix for the token
-growth problem flagged in Concept 8 (every step's full history gets
-re-sent on every subsequent call).
+Step 4 fix: `reason()` reports the REAL input+output tokens for its own
+LLM call (system prompt + user prompt sent, and the raw completion
+received), and run_agent_loop_skeleton sums these over EVERY lap - not
+just the final answer call. This fixes the flagged mistake: the loop
+re-sends the whole prompt every lap, so per-lap tokens must be summed or
+cost is understated by multiples. run_agent_loop_skeleton also now returns
+{answer, total_latency_ms, input_tokens, output_tokens, steps} - the same
+shape run_fixed_workflow returns, so the race harness can treat both
+systems identically.
 
-Known simplification: this re-summarizes the same older steps from
-scratch every time it's triggered, rather than caching/incrementally
-extending one running summary. Simple to follow, wasteful in practice -
-worth knowing the difference.
+Step 5: all four budgets are enforced, not just two.
+  1. Max iterations   -> MAX_STEPS (the for-loop bound)
+  2. Max tokens        -> MAX_TOKEN_BUDGET
+  3. Max cost          -> MAX_COST_USD (tokens * settings.COST_PER_TOKEN)
+  4. Wall-clock        -> MAX_WALL_CLOCK_SECONDS (whole run, not per-step)
+Every termination triggered by one of these four is logged with a
+"BUDGET HIT:" prefix so it's easy to find in a log and tell apart from the
+separate per-step TIMEOUT guard (Concept 5's original addition, which
+catches one hung call rather than an exhausted budget).
+
+BUG FIX (found while cross-checking against a later spec revision):
+check_deprecation was added to agent_tools.py's TOOLS registry in Task Set
+E Step 1, but was never actually wired into this file - the system prompt
+below still only listed retrieve/answer/finish, and act() never dispatched
+to it. The agent could never call its own third tool. Fixed here by
+generating the system prompt's tool list FROM the TOOLS registry instead
+of hand-duplicating it as a second string that can silently drift out of
+sync - that duplication is exactly how this bug happened. act() also now
+validates every tool's inputs against agent_tools.py's Pydantic schemas
+before dispatch (strict, type-safe parameters - malformed inputs become a
+clean recoverable observation instead of a crash deep inside a tool).
 """
 import asyncio
 import json
 import re
+import time
 
+from app.core.config import settings
 from app.services.agent_memory import recall, remember
-from app.services.agent_tools import generate_answer, search_knowledge_base
+from app.services.agent_tools import (
+    TOOLS,
+    check_deprecation,
+    generate_answer,
+    search_knowledge_base,
+    validate_tool_inputs,
+)
 from app.services.llm import generate_completion_stream
 
 MAX_STEPS = 5
 STEP_TIMEOUT_SECONDS = 30
-MAX_TOKEN_BUDGET = 4000
-SUMMARIZE_AFTER_STEPS = 2   # once history has more than this many steps...
-KEEP_RECENT_STEPS = 1       # ...compress everything except the most recent N
+MAX_TOKEN_BUDGET = 2000
+MAX_COST_USD = 0.01
+MAX_WALL_CLOCK_SECONDS = 120
+SUMMARIZE_AFTER_STEPS = 2
+KEEP_RECENT_STEPS = 1
 
-REACT_SYSTEM_PROMPT = """You are a ReAct agent. At each step, respond with ONE JSON object and nothing else:
 
-{"thought": "<your reasoning about what to do next>", "tool": "<retrieve|answer|finish>", "inputs": {<tool inputs>}}
+def _build_tools_section() -> str:
+    """Render the Tools section of the system prompt FROM the TOOLS
+    registry (agent_tools.py), instead of a hand-maintained duplicate
+    string - the registry is the single source of truth `act()` also
+    dispatches against, so the prompt can't silently drift out of sync
+    with what's actually callable (the bug this fix corrects)."""
+    lines = []
+    for name, spec in TOOLS.items():
+        inputs_desc = ", ".join(f"{k}: {v}" for k, v in spec["inputs"].items()) or "no inputs"
+        lines.append(f'- "{name}": {spec["description"]} inputs: {{{inputs_desc}}}')
+    return "\n".join(lines)
+
+
+REACT_SYSTEM_PROMPT = f"""You are a ReAct agent. At each step, respond with ONE JSON object and nothing else:
+
+{{"thought": "<your reasoning about what to do next>", "tool": "<{'|'.join(TOOLS.keys())}>", "inputs": {{<tool inputs>}}}}
 
 Tools:
-- "retrieve": search the knowledge base. inputs: {"query": "<search text>"}
-- "answer": produce the final answer using context retrieved so far. inputs: {}
-- "finish": stop without answering. inputs: {"message": "<optional note>"}
+{_build_tools_section()}
 
-Always retrieve before answering. Respond with ONLY the JSON object described above."""
+Always retrieve before answering, and check deprecation status when the question concerns whether something still works on a specific API version. Respond with ONLY the JSON object described above."""
 
 _JSON_RE = re.compile(r"\{.*\}", re.DOTALL)
 
 
 def _estimate_tokens(text: str) -> int:
-    """Same rough word-count heuristic used elsewhere in this codebase
-    (rag_engine.py's estimate_tokens) - good enough for a budget guard,
-    not a claim of real tokenizer accuracy."""
     return max(1, int(len((text or "").split()) / 0.75))
 
 
 def _choose_action(raw_output: str, query: str) -> dict:
-    """Parse the LLM's freeform text into a structured decision. If the
-    model doesn't return valid JSON, fall back to a safe default instead
-    of crashing - a malformed model response should degrade gracefully."""
     match = _JSON_RE.search(raw_output or "")
     if not match:
         return {
@@ -75,8 +112,6 @@ def _choose_action(raw_output: str, query: str) -> dict:
 
 
 async def summarize_history(older_steps: list[dict]) -> str:
-    """Compress older steps into a short paragraph instead of feeding them
-    to the model verbatim forever."""
     if not older_steps:
         return ""
 
@@ -108,11 +143,10 @@ async def summarize_history(older_steps: list[dict]) -> str:
     return summary.strip()
 
 
-async def reason(query: str, history: list[dict], memories: list[dict]) -> dict:
-    """Ask the LLM what to do next. History beyond SUMMARIZE_AFTER_STEPS
-    gets compressed (Concept 10); the rest of this IS still the ReAct step
-    from Concept 2 - Thought and Action produced together, as one parsed
-    JSON object."""
+async def reason(query: str, history: list[dict], memories: list[dict]) -> tuple[dict, int, int]:
+    """Ask the LLM what to do next. Returns (decision, input_tokens,
+    output_tokens) for THIS specific call, so the caller can sum real
+    per-lap cost instead of only counting the final answer."""
     prompt_lines = [f"Question: {query}", ""]
 
     if memories:
@@ -149,20 +183,33 @@ async def reason(query: str, history: list[dict], memories: list[dict]) -> dict:
         elif chunk["type"] == "error":
             raise RuntimeError(chunk.get("error", "LLM call failed"))
 
-    return _choose_action(raw_output, query)
+    input_tokens = _estimate_tokens(REACT_SYSTEM_PROMPT + user_prompt)
+    output_tokens = _estimate_tokens(raw_output)
+    return _choose_action(raw_output, query), input_tokens, output_tokens
 
 
 async def act(decision: dict, query: str, retrieved_chunks: list) -> dict:
     """Dispatch the LLM's chosen tool name to the real function that
-    implements it - this IS "tool calling." Native function-calling APIs
-    do this same dispatch for you; here it's a plain if-chain keyed on
-    tool name, which works with any LLM provider."""
+    implements it. Inputs are validated against agent_tools.py's Pydantic
+    schemas before dispatch - a missing/malformed field becomes a clean
+    error observation the next reasoning step can see and recover from,
+    instead of a raw exception from deep inside the tool."""
     tool = decision["tool"]
-    inputs = decision.get("inputs", {})
+    raw_inputs = decision.get("inputs", {}) or {}
+
+    validated, validation_error = validate_tool_inputs(tool, raw_inputs)
+    if validation_error:
+        return {"tool": tool, "output": {"error": f"Invalid inputs for '{tool}': {validation_error}"}}
 
     if tool == "retrieve":
-        search_query = inputs.get("query") or query
+        search_query = validated.query or query
         result = await search_knowledge_base(search_query)
+        retrieved_chunks.extend(result["raw_chunks"])
+        return {"tool": tool, "output": result["summary"]}
+
+    if tool == "check_deprecation":
+        endpoint_or_feature = validated.endpoint_or_feature or query
+        result = await check_deprecation(endpoint_or_feature, validated.api_version)
         retrieved_chunks.extend(result["raw_chunks"])
         return {"tool": tool, "output": result["summary"]}
 
@@ -174,31 +221,57 @@ async def act(decision: dict, query: str, retrieved_chunks: list) -> dict:
         return {"tool": tool, "output": result}
 
     # finish
-    return {"tool": tool, "output": {"message": inputs.get("message", "")}}
+    return {"tool": tool, "output": {"message": validated.message}}
 
 
-async def run_agent_loop_skeleton(query: str) -> list[dict]:
+async def run_agent_loop_skeleton(query: str) -> dict:
+    run_start = time.time()
     history: list[dict] = []
     retrieved_chunks: list = []
     used_queries: set[str] = set()
-    tokens_used = 0
+    total_input_tokens = 0
+    total_output_tokens = 0
+    final_answer = ""
 
     memories = await recall(query)
     if memories:
         print(f"  [memory] recalled {len(memories)} relevant past interaction(s).")
 
     for step_number in range(1, MAX_STEPS + 1):
-        if tokens_used >= MAX_TOKEN_BUDGET:
-            print(f"Stopping: token budget ({MAX_TOKEN_BUDGET}) exhausted before step {step_number}.")
+        elapsed = time.time() - run_start
+        if elapsed >= MAX_WALL_CLOCK_SECONDS:
+            print(
+                f"BUDGET HIT: wall-clock budget ({MAX_WALL_CLOCK_SECONDS}s) exceeded "
+                f"({elapsed:.1f}s elapsed) before step {step_number}. Terminating cleanly."
+            )
+            break
+
+        current_cost = (total_input_tokens + total_output_tokens) * settings.COST_PER_TOKEN
+        if current_cost >= MAX_COST_USD:
+            print(
+                f"BUDGET HIT: cost budget (${MAX_COST_USD:.4f}) exceeded "
+                f"(${current_cost:.6f} spent) before step {step_number}. Terminating cleanly."
+            )
+            break
+
+        if total_input_tokens + total_output_tokens >= MAX_TOKEN_BUDGET:
+            print(
+                f"BUDGET HIT: token budget ({MAX_TOKEN_BUDGET}) exhausted "
+                f"({total_input_tokens + total_output_tokens} used) before step {step_number}. "
+                f"Terminating cleanly."
+            )
             break
 
         try:
-            decision = await asyncio.wait_for(reason(query, history, memories), timeout=STEP_TIMEOUT_SECONDS)
+            decision, in_tok, out_tok = await asyncio.wait_for(
+                reason(query, history, memories), timeout=STEP_TIMEOUT_SECONDS
+            )
         except asyncio.TimeoutError:
-            print(f"Step {step_number} timed out during reasoning; stopping.")
+            print(f"TIMEOUT: step {step_number} timed out during reasoning; stopping.")
             break
 
-        tokens_used += _estimate_tokens(decision.get("thought", ""))
+        total_input_tokens += in_tok
+        total_output_tokens += out_tok
 
         if decision["tool"] == "retrieve":
             search_query = decision["inputs"].get("query", query)
@@ -217,11 +290,13 @@ async def run_agent_loop_skeleton(query: str) -> list[dict]:
                 act(decision, query, retrieved_chunks), timeout=STEP_TIMEOUT_SECONDS
             )
         except asyncio.TimeoutError:
-            print(f"Step {step_number} timed out during tool execution; stopping.")
+            print(f"TIMEOUT: step {step_number} timed out during tool execution; stopping.")
             break
 
         if decision["tool"] == "answer":
-            tokens_used += _estimate_tokens(observation["output"].get("answer", ""))
+            total_input_tokens += observation["output"].get("input_tokens", 0)
+            total_output_tokens += observation["output"].get("output_tokens", 0)
+            final_answer = observation["output"].get("answer", "")
 
         step = {
             "step_number": step_number,
@@ -237,18 +312,26 @@ async def run_agent_loop_skeleton(query: str) -> list[dict]:
             print(f"Stopping after step {step_number}: agent chose '{decision['tool']}'.")
             break
     else:
-        print(f"Stopping: reached MAX_STEPS={MAX_STEPS} without answering.")
+        print(f"BUDGET HIT: max iterations ({MAX_STEPS}) reached without answering. Terminating cleanly.")
 
-    if not history or history[-1]["tool"] not in ("answer", "finish"):
-        print("No definitive answer was reached within budget - a real caller should show a clear fallback message here.")
-    elif history[-1]["tool"] == "answer":
-        final_answer = history[-1]["observation"]["output"].get("answer", "")
-        if final_answer:
-            await remember(query, final_answer)
-            print("  [memory] stored this interaction for future recall.")
+    if not final_answer:
+        if history and history[-1]["tool"] == "finish":
+            final_answer = history[-1]["observation"]["output"].get("message", "") or "Finished without producing an answer."
+        else:
+            final_answer = "I could not find a sufficient answer within the allotted budget."
+    elif history and history[-1]["tool"] == "answer":
+        await remember(query, final_answer)
+        print("  [memory] stored this interaction for future recall.")
 
-    return history
+    return {
+        "answer": final_answer,
+        "total_latency_ms": int((time.time() - run_start) * 1000),
+        "input_tokens": total_input_tokens,
+        "output_tokens": total_output_tokens,
+        "steps": history,
+    }
 
 
 if __name__ == "__main__":
-    asyncio.run(run_agent_loop_skeleton("What is in the docs?"))
+    result = asyncio.run(run_agent_loop_skeleton("What is in the docs?"))
+    print(result)

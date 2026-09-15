@@ -330,6 +330,7 @@ class HealthResponse(BaseSchema):
 
 class AgentTool(str, Enum):
     RETRIEVE = "retrieve"
+    CHECK_DEPRECATION = "check_deprecation"
     ANSWER = "answer"
     FINISH = "finish"
 
