@@ -30,14 +30,14 @@ You reason step by step in a Thought -> Action -> Observation loop. At each step
 
 Available tools:
 - "retrieve": search the knowledge base for context relevant to the question. inputs: {"query": "<search query>"}
-- "check_deprecation": determine if a specific API endpoint or feature is deprecated or removed in a given API version, and what replaced it. Use when the question asks about version-specific changes like 'Does X still exist in version Y?' or 'Was Z removed in 2026-03-10?'. Do NOT use for general knowledge searches — use retrieve for those. inputs: {"endpoint_or_feature": "<string>", "api_version": "2022-11-28 | 2026-03-10"}
+- "check_deprecation": determine if a specific API endpoint or feature is deprecated or removed in a given API version, and what replaced it. ONLY use when the question explicitly mentions a specific API version date (e.g., '2022-11-28', '2026-03-10'). Do NOT use for general questions, version-agnostic questions, or questions that don't mention a version date — use retrieve for those. Using this tool on a general question wastes a step. inputs: {"endpoint_or_feature": "<string>", "api_version": "2022-11-28 | 2026-03-10"}
 - "answer": produce the final answer using everything retrieved so far. inputs: {}
 - "finish": stop without producing a new answer (e.g. you already answered in a prior step). inputs: {"message": "<optional note>"}
 
 Rules:
 - Always retrieve at least once before answering, unless earlier steps already retrieved relevant context.
 - Never repeat a "retrieve" call with the same query you already used.
-- Check deprecation status when the question concerns whether something still works on a specific API version.
+- Only check deprecation status when the question explicitly names a specific API version date.
 - Once you have enough context to answer, call "answer" - do not keep retrieving indefinitely.
 - Respond with ONLY the JSON object described in the system prompt.
 """
@@ -74,8 +74,14 @@ def _chunk_to_source(chunk: Any) -> dict[str, Any]:
 
 
 class AgentEngine:
-    def __init__(self):
+    def __init__(self, enable_dedup_guard: bool = True):
         self.rag_engine = RagEngine()
+        # Exists so evals/trajectory_eval.py's run_mitigation_experiment can
+        # measure a real before/after: False reproduces the pre-mitigation
+        # behavior (an LLM can repeat the same retrieve query indefinitely,
+        # up to max_steps) for the "before" run, True (the default, and the
+        # only mode used in production) is the fix.
+        self.enable_dedup_guard = enable_dedup_guard
 
     def _build_react_prompt(self, query: str, history: list[dict[str, Any]], max_steps: int) -> str:
         lines = [f"Question: {query}", f"You have at most {max_steps} reasoning steps total.", ""]
@@ -172,6 +178,7 @@ class AgentEngine:
         history: list[dict[str, Any]] = []
         steps: list[AgentStep] = []
         retrieved_chunks: list = []
+        used_queries: set[str] = set()
         final_answer = ""
         sources: list[dict[str, Any]] = []
 
@@ -185,6 +192,17 @@ class AgentEngine:
                 raw_output = ""
 
             reason, action = self._choose_action(raw_output, query)
+
+            if action.tool == AgentTool.RETRIEVE and self.enable_dedup_guard:
+                search_query = action.inputs.get("query") or query
+                if search_query in used_queries:
+                    logger.info(
+                        f"Agent: repeated retrieve query at step {step_number} ('{search_query}'); forcing answer instead"
+                    )
+                    reason = "Already searched for this; answering with what's available instead of repeating."
+                    action = AgentAction(tool=AgentTool.ANSWER, inputs={})
+                else:
+                    used_queries.add(search_query)
 
             yield emit(
                 "agent.reason",
@@ -234,6 +252,9 @@ class AgentEngine:
                 try:
                     result = await check_deprecation(endpoint_or_feature, api_version)
                     retrieved_chunks.extend(result["raw_chunks"])
+                    # Sanitize tool output against prompt injection
+                    from evals.trajectory_eval import sanitize_tool_output
+                    result["summary"] = sanitize_tool_output(result["summary"])
                     observation = AgentObservation(
                         tool=action.tool,
                         output=result["summary"],
@@ -278,6 +299,12 @@ class AgentEngine:
                             answer_error = chunk.get("error")
                 except Exception as e:
                     answer_error = str(e)
+
+                # Run output guardrails on generated answer
+                from evals.trajectory_eval import check_output_guardrails
+                guardrail = check_output_guardrails(answer_text)
+                if not guardrail["clean"]:
+                    answer_text = "[ANSWER BLOCKED: potentially unsafe content detected]"
 
                 final_answer = answer_text or final_answer
                 observation = AgentObservation(

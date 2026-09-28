@@ -1,42 +1,31 @@
 system,case_id,passed,latency_ms,input_tokens,output_tokens,cost,answer
-agent,combine-001,True,54461,1888,103,0.0009954999999999999,"The Combine framework provides a declarative Swift API for processing values over time. It defines publishers that expose values that can change, subscribers that receive those values, and operators that transform and republish the data stream. These components allow developers to handle asynchronous events in a concise, composable way. [1]"
-agent,combine-005,False,34172,1756,73,0.0009145,"AnyPublisher is a type‑erasing publisher that wraps another publisher, allowing you to expose a publisher without revealing its concrete type. It performs type erasure so callers can work with a generic publisher interface. [1]"
-agent,gh-001,True,21850,1913,92,0.0010025,Read the rate limit information from the `resources.core` field. [3]
-agent,gh-004,False,56629,1245,76,0.0006605,I could not find a sufficient answer within the allotted budget.
-agent,gh-009,True,43640,1995,162,0.0010785,"The current API version returns **HTTP 200 OK** on a successful workflow‑dispatch request.  
-The response body contains the triggered workflow run’s details, e.g.:
-
-```json
-{ ""id"": 123456, ""status"": ""queued"", ""workflow_id"": 1 }
-```
-
-[2]"
-agent,gh-002,True,35739,1995,105,0.00105,No. In the 2026‑03‑10 API version the top‑level `rate` property has been removed; rate‑limit information is now only available under `resources.core`【1】.
-agent,gh-003,False,33469,2050,164,0.001107,"Your integration should stop relying on the top‑level `rate` object and instead read the rate‑limit data from the `resources.core` field that is returned by `/rate_limit`.  
-In the current API version the `rate` property has been removed, so accessing it will no longer work. Update your code to use `resources.core.limit`, `resources.core.remaining`, and `resources.core.reset` instead.  
-
-[1]"
-agent,gh-006,False,47042,410,36,0.000223,I could not find a sufficient answer within the allotted budget.
-agent,gh-007,True,54813,1922,124,0.001023,"No – the `merge_commit_sha` field was removed from pull‑request responses in the current API version.  
-To get the merge commit you now need to query the repository’s commit history (e.g., list commits on the target branch or use the commits endpoint) and locate the merge commit that corresponds to the pull request.  
-
-[1]"
-agent,gh-013,True,30096,1713,164,0.0009385,"In the 2026‑03‑10 API version the attestation list responses no longer embed the full attestation bundle. The `bundle` property was removed and replaced with a `bundle_url` that points to the bundle resource. In contrast, the 2022‑11‑28 version returned each attestation with an inline `bundle` property containing the full bundle data. [1][2]"
-workflow,combine-001,True,11804,594,102,0.000348,"The Combine framework provides a declarative Swift API for processing values over time. It exposes **publishers** that deliver sequences of values, **subscribers** that receive those values, and a rich set of operators to transform and combine them. Combine also supplies built‑in publishers for common Foundation types such as `Timer`, `NotificationCenter`, and `URLSession`, and for any property that conforms to Key‑Value Observing. These features let developers centralize asynchronous event handling and avoid nested closures or callback‑based code. [1][2][4]"
-workflow,combine-005,True,38104,658,17,0.00033749999999999996,AnyPublisher is a publisher that performs type erasure by wrapping another publisher. [1]
-workflow,gh-001,True,38298,637,10,0.0003235,Read the `resources.core` field in the response. [2]
-workflow,gh-004,True,11258,593,17,0.000305,"The current API version reports a submodule entry’s type field as `""submodule""`. [2]"
-workflow,gh-009,True,103433,548,44,0.000296,"The current API version returns **200 OK** on a successful workflow dispatch.  
-The response body contains the triggered workflow run’s details, e.g.:
-
-```json
-{ ""id"": 123456, ""status"": ""queued"", ""workflow_id"": 1 }
-```
-
-[1]"
-workflow,gh-002,True,13662,620,28,0.00032399999999999996,No. In the 2026‑03‑10 API version the top‑level `rate` property has been removed; rate‑limit information is now only available under `resources.core`【3】.
-workflow,gh-003,False,71104,686,48,0.000367,Your integration should stop reading the deprecated top‑level `rate` object and instead read the rate‑limit data from the `resources.core` field in the `/rate_limit` response. This change will keep it compatible with the current API version. [1]
-workflow,gh-006,True,45225,501,33,0.000267,No. The current version of `GET /repos/{owner}/{repo}` no longer includes the `has_downloads` field. The property has been removed and there is no replacement field. [1]
-workflow,gh-007,True,8654,589,66,0.0003275,"No. In the current API version the `merge_commit_sha` field has been removed from pull‑request responses【2】.  
-Instead, after a merge you should query the repository’s commit history (e.g., list commits or inspect the merge commit via the commits endpoint) to find the merge commit that was created for the pull request【2】."
-workflow,gh-013,True,9528,601,73,0.000337,"Between API Version 2022‑11‑28 and 2026‑03‑10, the attestation list responses were updated to **remove the inline `bundle` property**. Instead, each attestation now includes a `bundle_url` field that points to the attestation bundle, which must be fetched separately. This change is documented for the 2026‑03‑10 release and is a migration step from the 2022‑11‑28 behavior. [2]"
+agent,01,True,52677,1811,74,0.0009425,The default value for the `mode` parameter is **`markdown`**. [2]
+agent,04,False,30385,0,0,0.0,I could not find a sufficient answer within the allotted budget.
+agent,07,True,21328,1847,51,0.000949,The OAuth scopes required are **public_repo** or **repo**. [2]
+agent,09,True,23725,1992,84,0.0010379999999999999,The `draft` parameter defaults to **false** when creating a pull request via the GitHub REST API.【1】【5】
+agent,12,True,26678,2005,89,0.001047,The API returns an HTTP **201 Created** status code when a pull request is successfully created. [2][5]
+agent,03,False,44761,1092,92,0.000592,I could not find a sufficient answer within the allotted budget.
+agent,06,True,20410,1541,81,0.000811,The default value of `sortParamsByRequiredFlag` in the Swagger Codegen 2.x Java client generator is **true**【1】.
+agent,08,True,28296,1637,70,0.0008535,The Swagger Codegen CLI jar for version 2.x was fetched from the Maven group **io.swagger**【1】【2】
+agent,10,True,43574,2556,73,0.0013145,The default value for the `packageName` option in the Python generator is **`swagger_client`**【3】.
+agent,02,True,33467,1608,43,0.0008255,The Swagger Codegen CLI 3.x is fetched from the Maven group id **`io.swagger.codegen.v3`**【3】【5】
+agent,05,False,46485,1174,81,0.0006275,I could not find a sufficient answer within the allotted budget.
+agent,11,False,49376,1096,35,0.0005654999999999999,I could not find a sufficient answer within the allotted budget.
+agent,13,True,23312,2382,76,0.0012289999999999998,I could not find a sufficient answer within the allotted budget.
+agent,14,True,16683,2022,83,0.0010525,I could not find a sufficient answer within the allotted budget.
+agent,15,True,38564,2936,57,0.0014965,I could not find that information in the provided documents.
+workflow,01,True,12112,622,13,0.00031749999999999997,The default value for the `mode` parameter is **`markdown`**. [2]
+workflow,04,True,10600,629,21,0.000325,The GitHub REST API limits Markdown content to **400 KB or less** when rendering it. [1]
+workflow,07,True,11101,620,10,0.00031499999999999996,The OAuth scopes required are **public_repo** or **repo**.【1】
+workflow,09,True,8738,681,22,0.0003515,The `draft` parameter defaults to **false** when creating a pull request via the GitHub REST API. [1][3]
+workflow,12,True,7978,560,13,0.00028649999999999997,The API returns **201 Created** on a successful pull‑request creation.【1】【4】
+workflow,03,False,37758,434,13,0.00022349999999999998,I could not find that information in the provided documents.
+workflow,06,True,8262,386,20,0.000203,The default value of `sortParamsByRequiredFlag` in the Swagger Codegen 2.x Java client generator is **true**【1】【4】.
+workflow,08,True,8294,480,22,0.000251,The Maven group id used for fetching the Swagger Codegen CLI jar in version 2.x was **io.swagger**【2】.
+workflow,10,True,13119,432,22,0.000227,The default value for the `packageName` option in the Python generator of Swagger Codegen 2.x is **`swagger_client`**【3】.
+workflow,02,True,11442,480,22,0.000251,The Maven group id used to download the Swagger Codegen CLI jar for version 3.x is **io.swagger.codegen.v3**【3】.
+workflow,05,True,21832,453,20,0.0002365,The Python generator in Swagger Codegen v3 defaults to a package version string of **`1.0.0`**.【1】
+workflow,11,False,44238,402,18,0.00020999999999999998,The default value of `allowUnicodeIdentifiers` in the Swagger Codegen 3.x Java generator is **true**【1】.
+workflow,13,True,39289,578,13,0.00029549999999999997,I could not find that information in the provided documents.
+workflow,14,True,11533,414,13,0.00021349999999999999,I could not find that information in the provided documents.
+workflow,15,True,7655,549,13,0.000281,I could not find that information in the provided documents.

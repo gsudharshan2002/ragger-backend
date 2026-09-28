@@ -164,7 +164,7 @@ TOOLS: dict[str, dict[str, Any]] = {
         "inputs": {"query": "string - the search text"},
     },
     "check_deprecation": {
-        "description": "Check whether a specific API endpoint or feature is deprecated or removed in a given API version, and what replaced it. Use when the question asks about version-specific changes like 'Does X still exist in version Y?' or 'Was Z removed in 2026-03-10?'. Do NOT use for general knowledge searches — use retrieve for those.",
+        "description": "Check whether a specific API endpoint or feature is deprecated or removed in a given API version, and what replaced it. ONLY use when the question explicitly mentions a specific API version date (e.g., '2022-11-28', '2026-03-10'). Do NOT use for general questions, version-agnostic questions, or questions that don't mention a version date — use retrieve for those. Using this tool on a general question wastes a step.",
         "inputs": {"endpoint_or_feature": "string - the endpoint or feature name", "api_version": "enum: 2022-11-28 | 2026-03-10 - the API version to check against"},
     },
     "answer": {
