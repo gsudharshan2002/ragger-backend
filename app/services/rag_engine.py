@@ -186,6 +186,91 @@ async def get_default_rag_config(
     )
 
 
+class RagEngine:
+    """Retrieval-only entry point into the RAG pipeline (no LLM generation,
+    no event emission) for callers - like AgentEngine - that just need the
+    final context chunks for a query."""
+
+    async def get_context(
+        self,
+        query: str,
+        strategy: Optional[RagStrategy] = None,
+        knowledge_base_id: Optional[str] = None,
+    ) -> list:
+        saved_settings = await get_settings()
+        persisted_strategy = saved_settings.get("defaultStrategy") or settings.DEFAULT_STRATEGY
+        resolved_strategy = strategy or persisted_strategy
+
+        try:
+            config = await get_default_rag_config(resolved_strategy)
+        except Exception:
+            config = await get_default_rag_config(RagStrategy.HYBRID_RRF)
+        config.strategy = resolved_strategy
+
+        if knowledge_base_id:
+            all_docs = await get_all_documents()
+            kb_doc_ids = {
+                d.id for d in all_docs
+                if getattr(d, "knowledge_base_id", None) == knowledge_base_id
+            }
+            all_chunks_raw = await get_all_chunks()
+            all_chunks = [c for c in all_chunks_raw if c.document_id in kb_doc_ids]
+        else:
+            all_chunks = await get_all_chunks()
+
+        if not all_chunks:
+            return []
+
+        vector_results: list[VectorResult] = []
+        bm25_results: list[BM25Result] = []
+        fused_results: list[RRFResult] = []
+        rerank_results: list[RerankResult] = []
+        mmr_results: list[MMRResult] = []
+
+        if should_run_vector(config.strategy) and await is_embedding_configured():
+            try:
+                query_embedding = await generate_query_embedding(query)
+                if query_embedding:
+                    vector_results = vector_search(
+                        query_embedding,
+                        all_chunks,
+                        config.vector.top_k,
+                        config.vector.similarity_threshold,
+                        config.vector.similarity,
+                    )
+            except Exception as e:
+                logger.error(f"Agent retrieve: vector search failed: {e}")
+
+        if should_run_bm25(config.strategy):
+            bm25_results = bm25_search(
+                query, all_chunks, config.bm25.top_k, config.bm25.language, config.bm25.tokenizer
+            )
+
+        if should_run_rrf(config.strategy):
+            fused_results = rrf_fusion(
+                vector_results, bm25_results, config.rrf.k, config.rrf.vector_weight, config.rrf.bm25_weight
+            )
+
+        if should_run_reranker(config.strategy, config) and fused_results:
+            rerank_chunks = [r.chunk for r in fused_results[: config.reranker.candidate_count]]
+            rerank_results = await rerank_documents(
+                query, rerank_chunks, config.reranker.model, config.reranker.candidate_count, config.reranker.top_n
+            )
+
+        if should_run_mmr(config.strategy, config) and rerank_results:
+            mmr_results = mmr_selection(
+                [r.chunk for r in rerank_results],
+                [r.rerank_score for r in rerank_results],
+                config.mmr.lambda_,
+                config.mmr.candidate_count,
+                config.mmr.final_count,
+            )
+
+        return _build_final_context(
+            config.strategy, vector_results, bm25_results, fused_results, rerank_results, mmr_results, config
+        )
+
+
 def _truncate_to_tokens(
     text: str,
     max_tokens: int,

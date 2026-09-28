@@ -1,0 +1,42 @@
+system,case_id,passed,latency_ms,input_tokens,output_tokens,cost,answer
+agent,combine-001,True,54461,1888,103,0.0009954999999999999,"The Combine framework provides a declarative Swift API for processing values over time. It defines publishers that expose values that can change, subscribers that receive those values, and operators that transform and republish the data stream. These components allow developers to handle asynchronous events in a concise, composable way. [1]"
+agent,combine-005,False,34172,1756,73,0.0009145,"AnyPublisher is a type‑erasing publisher that wraps another publisher, allowing you to expose a publisher without revealing its concrete type. It performs type erasure so callers can work with a generic publisher interface. [1]"
+agent,gh-001,True,21850,1913,92,0.0010025,Read the rate limit information from the `resources.core` field. [3]
+agent,gh-004,False,56629,1245,76,0.0006605,I could not find a sufficient answer within the allotted budget.
+agent,gh-009,True,43640,1995,162,0.0010785,"The current API version returns **HTTP 200 OK** on a successful workflow‑dispatch request.  
+The response body contains the triggered workflow run’s details, e.g.:
+
+```json
+{ ""id"": 123456, ""status"": ""queued"", ""workflow_id"": 1 }
+```
+
+[2]"
+agent,gh-002,True,35739,1995,105,0.00105,No. In the 2026‑03‑10 API version the top‑level `rate` property has been removed; rate‑limit information is now only available under `resources.core`【1】.
+agent,gh-003,False,33469,2050,164,0.001107,"Your integration should stop relying on the top‑level `rate` object and instead read the rate‑limit data from the `resources.core` field that is returned by `/rate_limit`.  
+In the current API version the `rate` property has been removed, so accessing it will no longer work. Update your code to use `resources.core.limit`, `resources.core.remaining`, and `resources.core.reset` instead.  
+
+[1]"
+agent,gh-006,False,47042,410,36,0.000223,I could not find a sufficient answer within the allotted budget.
+agent,gh-007,True,54813,1922,124,0.001023,"No – the `merge_commit_sha` field was removed from pull‑request responses in the current API version.  
+To get the merge commit you now need to query the repository’s commit history (e.g., list commits on the target branch or use the commits endpoint) and locate the merge commit that corresponds to the pull request.  
+
+[1]"
+agent,gh-013,True,30096,1713,164,0.0009385,"In the 2026‑03‑10 API version the attestation list responses no longer embed the full attestation bundle. The `bundle` property was removed and replaced with a `bundle_url` that points to the bundle resource. In contrast, the 2022‑11‑28 version returned each attestation with an inline `bundle` property containing the full bundle data. [1][2]"
+workflow,combine-001,True,11804,594,102,0.000348,"The Combine framework provides a declarative Swift API for processing values over time. It exposes **publishers** that deliver sequences of values, **subscribers** that receive those values, and a rich set of operators to transform and combine them. Combine also supplies built‑in publishers for common Foundation types such as `Timer`, `NotificationCenter`, and `URLSession`, and for any property that conforms to Key‑Value Observing. These features let developers centralize asynchronous event handling and avoid nested closures or callback‑based code. [1][2][4]"
+workflow,combine-005,True,38104,658,17,0.00033749999999999996,AnyPublisher is a publisher that performs type erasure by wrapping another publisher. [1]
+workflow,gh-001,True,38298,637,10,0.0003235,Read the `resources.core` field in the response. [2]
+workflow,gh-004,True,11258,593,17,0.000305,"The current API version reports a submodule entry’s type field as `""submodule""`. [2]"
+workflow,gh-009,True,103433,548,44,0.000296,"The current API version returns **200 OK** on a successful workflow dispatch.  
+The response body contains the triggered workflow run’s details, e.g.:
+
+```json
+{ ""id"": 123456, ""status"": ""queued"", ""workflow_id"": 1 }
+```
+
+[1]"
+workflow,gh-002,True,13662,620,28,0.00032399999999999996,No. In the 2026‑03‑10 API version the top‑level `rate` property has been removed; rate‑limit information is now only available under `resources.core`【3】.
+workflow,gh-003,False,71104,686,48,0.000367,Your integration should stop reading the deprecated top‑level `rate` object and instead read the rate‑limit data from the `resources.core` field in the `/rate_limit` response. This change will keep it compatible with the current API version. [1]
+workflow,gh-006,True,45225,501,33,0.000267,No. The current version of `GET /repos/{owner}/{repo}` no longer includes the `has_downloads` field. The property has been removed and there is no replacement field. [1]
+workflow,gh-007,True,8654,589,66,0.0003275,"No. In the current API version the `merge_commit_sha` field has been removed from pull‑request responses【2】.  
+Instead, after a merge you should query the repository’s commit history (e.g., list commits or inspect the merge commit via the commits endpoint) to find the merge commit that was created for the pull request【2】."
+workflow,gh-013,True,9528,601,73,0.000337,"Between API Version 2022‑11‑28 and 2026‑03‑10, the attestation list responses were updated to **remove the inline `bundle` property**. Instead, each attestation now includes a `bundle_url` field that points to the attestation bundle, which must be fetched separately. This change is documented for the 2026‑03‑10 release and is a migration step from the 2022‑11‑28 behavior. [2]"

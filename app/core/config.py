@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     OPENROUTER_MODEL: str = "meta-llama/llama-3.3-70b-instruct"
     LLM_TEMPERATURE: float = 0.7
     LLM_TOP_P: float = 1.0
-    LLM_MAX_TOKENS: int = 1024
+    LLM_MAX_TOKENS: int = 128
 
     # Embeddings
     EMBEDDING_PROVIDER: Literal["local", "cohere"] = "local"
@@ -60,6 +60,10 @@ class Settings(BaseSettings):
 
     # MMR
     MMR_LAMBDA: float = 0.7
+
+    # Agent (ReAct)
+    AGENT_MAX_STEPS: int = 5
+    AGENT_TEMPERATURE: float = 0.2
 
     # System Prompt
     SYSTEM_PROMPT: str = (
