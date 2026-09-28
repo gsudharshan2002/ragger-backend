@@ -9,8 +9,10 @@ from app.core.config import settings
 from app.core.rate_limit import RateLimitMiddleware
 from app.api.v1.router import api_router
 from app.mcp_server import build_mcp_http_app, mcp as mcp_server
+from app.mcp_package_registry import build_mcp_http_app as build_package_registry_app, mcp as package_registry_server
 
 mcp_http_app = build_mcp_http_app()
+package_registry_http_app = build_package_registry_app()
 
 
 @asynccontextmanager
@@ -22,6 +24,7 @@ async def lifespan(app: FastAPI):
         # happens for a sub-app's OWN lifespan, never automatically for a
         # mounted one) is the documented way to combine it with ours.
         await stack.enter_async_context(mcp_server.session_manager.run())
+        await stack.enter_async_context(package_registry_server.session_manager.run())
 
         # Startup
         logging.info(f"Starting {settings.APP_NAME} v1.0")
@@ -80,6 +83,9 @@ app.include_router(api_router, prefix=settings.API_PREFIX)
 # MCP server - same tools as the agent (retrieve, check_deprecation_status,
 # answer, finish) exposed over HTTP for any MCP client, local or remote.
 app.mount(f"{settings.API_PREFIX}/mcp", mcp_http_app)
+
+# Package Registry MCP server - package search and info tools
+app.mount(f"{settings.API_PREFIX}/mcp/package-registry", package_registry_http_app)
 
 
 @app.get("/health")

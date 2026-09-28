@@ -2,9 +2,9 @@
 
 Wraps the same functions the agent loop dispatches to
 (app/services/agent_tools.py, app/services/agent_loop.py) so any MCP
-client (Claude Code, Claude Desktop, etc.) can drive this project's RAG
-pipeline directly - search, deprecation lookups, and answer generation -
-without going through the agent loop or the HTTP API.
+client can drive this project's RAG pipeline directly - search,
+deprecation lookups, and answer generation - without going through
+the agent loop or the HTTP API.
 
 Each call is stateless: `answer` doesn't share memory with a prior
 `retrieve` call in the same session, so pass the exact `chunks` list a
@@ -13,22 +13,9 @@ prior `retrieve`/`check_deprecation` call returned back into `answer`.
 Run:
     uv run python -m app.mcp_server
 
-Register in Claude Code, local stdio (project-scoped, from this directory):
-    claude mcp add ragger-tools -- uv run --directory $(pwd) python -m app.mcp_server
-
 Or, for anyone else, point an HTTP MCP client at the copy mounted inside
 the main FastAPI app (see app/main.py) - no separate process needed:
-    claude mcp add --transport http ragger-tools http://<host>:<port>/api/v1/mcp
-
-Or add to a .mcp.json / claude_desktop_config.json:
-    {
-      "mcpServers": {
-        "ragger-tools": {
-          "type": "http",
-          "url": "http://<host>:<port>/api/v1/mcp"
-        }
-      }
-    }
+    http://<host>:<port>/api/v1/mcp
 """
 from typing import Any, Optional
 
@@ -182,6 +169,5 @@ def build_mcp_http_app():
 
 
 if __name__ == "__main__":
-    # Local stdio transport, e.g. for `claude mcp add` - see the module
-    # docstring above.
+    # Local stdio transport - see the module docstring above.
     mcp.run()

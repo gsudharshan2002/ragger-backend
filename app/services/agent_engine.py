@@ -19,10 +19,12 @@ from app.models.schemas import (
 from app.services.agent_tools import ApiVersion, check_deprecation
 from app.services.llm import generate_completion_stream, is_llm_configured
 from app.services.rag_engine import RagEngine, build_prompt, estimate_tokens
+from app.services.mcp_client import MCPManager
+from mcp.types import Tool as MCPTool
 
 logger = get_logger(__name__)
 
-REACT_SYSTEM_PROMPT = """You are a ReAct-style research agent that answers questions using a document knowledge base.
+REACT_SYSTEM_PROMPT_FALLBACK = """You are a ReAct-style research agent that answers questions using a document knowledge base.
 
 You reason step by step in a Thought -> Action -> Observation loop. At each step you must respond with a single JSON object and nothing else - no markdown fences, no commentary before or after it:
 
@@ -41,6 +43,48 @@ Rules:
 - Once you have enough context to answer, call "answer" - do not keep retrieving indefinitely.
 - Respond with ONLY the JSON object described in the system prompt.
 """
+
+
+def _format_tool_inputs(tool: MCPTool) -> str:
+    schema = tool.inputSchema or {}
+    properties = schema.get("properties", {})
+    if not properties:
+        return " inputs: {}"
+    parts = [f'{k}: {v.get("type", "any")}' for k, v in properties.items()]
+    return f" inputs: {{{', '.join(parts)}}}"
+
+
+def build_system_prompt(tools: dict[str, MCPTool]) -> str:
+    """Build the system prompt dynamically from discovered MCP tools.
+
+    This enables zero-code addition of new MCP servers - the Agent's
+    system prompt adapts to whatever tools are available via MCP.
+    """
+    tool_descriptions = []
+    for name, tool in tools.items():
+        desc = tool.description or "No description available"
+        inputs_str = _format_tool_inputs(tool)
+        tool_descriptions.append(f'- "{name}": {desc}{inputs_str}')
+
+    tools_section = "\n".join(tool_descriptions)
+
+    return (
+        "You are a ReAct-style research agent that answers questions "
+        "using a document knowledge base.\n\n"
+        "You reason step by step in a Thought -> Action -> Observation "
+        "loop. At each step you must respond with a single JSON object "
+        "and nothing else - no markdown fences, no commentary before or "
+        "after it:\n\n"
+        '{"thought": "<reasoning>", "tool": "<TOOL_NAME>", "inputs": {<inputs>}}\n\n'
+        f"Available tools:\n{tools_section}\n\n"
+        "Rules:\n"
+        "- Always retrieve at least once before answering, unless earlier "
+        "steps already retrieved relevant context.\n"
+        "- Never repeat a retrieve call with the same query you already used.\n"
+        "- Once you have enough context to answer, call \"answer\" - do not "
+        "keep retrieving indefinitely.\n"
+        "- Respond with ONLY the JSON object described in the system prompt."
+    )
 
 _JSON_BLOCK_RE = re.compile(r"\{.*\}", re.DOTALL)
 _ANSWER_MAX_TOKENS = 1024
@@ -108,12 +152,13 @@ class AgentEngine:
         history: list[dict[str, Any]],
         max_steps: int,
         temperature: float,
+        system_prompt: str = REACT_SYSTEM_PROMPT_FALLBACK,
     ) -> str:
         prompt = self._build_react_prompt(query, history, max_steps)
         text = ""
 
         async for chunk in generate_completion_stream(
-            REACT_SYSTEM_PROMPT, prompt, None, temperature, _REASON_MAX_TOKENS, 1.0
+            system_prompt, prompt, None, temperature, _REASON_MAX_TOKENS, 1.0
         ):
             if chunk["type"] == "token" and chunk.get("content"):
                 text += chunk["content"]
@@ -175,6 +220,24 @@ class AgentEngine:
             yield {"type": "error", "error": error_msg}
             return
 
+        # Initialize MCP manager if MCP mode is requested
+        mcp_manager = None
+        mcp_system_prompt = REACT_SYSTEM_PROMPT_FALLBACK
+        mcp_tools = {}
+        
+        if request.mcp:
+            try:
+                mcp_manager = await get_mcp_manager()
+                mcp_tools = await mcp_manager.discover_tools()
+                if mcp_tools:
+                    mcp_system_prompt = build_system_prompt(mcp_tools)
+                    logger.info(f"MCP mode enabled with {len(mcp_tools)} tools: {list(mcp_tools.keys())}")
+                else:
+                    logger.warning("MCP requested but no tools discovered from MCP servers")
+            except Exception as e:
+                logger.error(f"Failed to initialize MCP manager: {e}")
+                # Continue with fallback behavior
+
         history: list[dict[str, Any]] = []
         steps: list[AgentStep] = []
         retrieved_chunks: list = []
@@ -186,7 +249,9 @@ class AgentEngine:
             yield emit("agent.reason", {"step_number": step_number, "status": "thinking"})
 
             try:
-                raw_output = await self._reason(query, history, max_steps, temperature)
+                raw_output = await self._reason(
+                    query, history, max_steps, temperature, mcp_system_prompt
+                )
             except Exception as e:
                 logger.error(f"Agent reasoning call failed at step {step_number}: {e}")
                 raw_output = ""
@@ -243,6 +308,23 @@ class AgentEngine:
                         output={},
                         latency_ms=int((time.time() - step_start) * 1000),
                         error=str(e),
+                    )
+
+            elif mcp_manager and action.tool in mcp_manager.tool_names and mcp_tools:
+                # MCP tool dispatch - call the tool on the registered MCP server
+                result = await mcp_manager.call_tool(action.tool, action.inputs)
+                if result:
+                    observation = AgentObservation(
+                        tool=action.tool,
+                        output=result if isinstance(result, dict) else {"summary": str(result)},
+                        latency_ms=int((time.time() - step_start) * 1000),
+                    )
+                else:
+                    observation = AgentObservation(
+                        tool=action.tool,
+                        output={},
+                        latency_ms=int((time.time() - step_start) * 1000),
+                        error=f"Tool '{action.tool}' not found on any MCP server",
                     )
 
             elif action.tool == AgentTool.CHECK_DEPRECATION:
