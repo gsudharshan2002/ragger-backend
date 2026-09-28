@@ -84,6 +84,7 @@ class ApiVersion(str, Enum):
 # TypeError/ValueError happening deep inside the tool function itself.
 class RetrieveInputs(BaseModel):
     query: Optional[str] = None
+    strategy: Optional[RagStrategy] = None
 
 
 class CheckDeprecationInputs(BaseModel):
@@ -161,7 +162,18 @@ async def check_deprecation(endpoint_or_feature: str, api_version: ApiVersion) -
 TOOLS: dict[str, dict[str, Any]] = {
     "retrieve": {
         "description": "Open-ended search of the knowledge base for context relevant to a query.",
-        "inputs": {"query": "string - the search text"},
+        "inputs": {
+            "query": "string - the search text",
+            "strategy": (
+                "optional enum: vector | bm25 | hybrid | hybrid-rrf | hybrid-rerank | hybrid-rerank-mmr. "
+                "Leave unset for most questions - it uses the configured default. Only set 'bm25' when "
+                "the query contains an exact technical term, field/parameter name, or identifier likely "
+                "to appear verbatim in the docs (e.g. 'sortParamsByRequiredFlag', 'has_downloads'). Only "
+                "set 'vector' for a conceptual/paraphrased question with no exact term to match. Do not "
+                "guess between the other strategies - if it's not clearly one of these two cases, leave "
+                "strategy unset."
+            ),
+        },
     },
     "check_deprecation": {
         "description": "Check whether a specific API endpoint or feature is deprecated or removed in a given API version, and what replaced it. ONLY use when the question explicitly mentions a specific API version date (e.g., '2022-11-28', '2026-03-10'). Do NOT use for general questions, version-agnostic questions, or questions that don't mention a version date — use retrieve for those. Using this tool on a general question wastes a step.",

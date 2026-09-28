@@ -1,12 +1,9 @@
 """Week 8: Trajectory-based evaluation of agent failure modes."""
 
 import asyncio
-import json
 import re
-import statistics
 import time
 from pathlib import Path
-from typing import Any, Optional
 
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
 
@@ -174,7 +171,6 @@ async def run_trajectory_case(case: dict, use_injection: bool = False, disable_m
     total_latency_ms = 0
     input_tokens = 0
     output_tokens = 0
-    cost = 0.0
 
     start_time = time.time()
     pending_reason = ""

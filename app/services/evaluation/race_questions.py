@@ -1,30 +1,33 @@
 """Task Set E, Step 3: the race question set.
 
-A curated 10-question subset of the original hand-authored 15 (see git
-history / prior conversation for the full set), covering three reference
-docs (github_combined_reference.pdf, swagger_v2_reference.pdf,
-swagger_v3_reference.pdf). Trimmed for diversity, not just size: dropped
-near-duplicate "default value" lookups that exercised the same question
-shape as one already kept, and 2 of 3 negative/refusal cases that all
-tested identical refusal behavior. Kept both cases that caught real product
-bugs during live runs (03's retrieval gap, 11's hallucination-off-a-decoy),
-so the set still has diagnostic value, not just easy wins.
+Kept identical (same 10 ids, same question text) to evals/trajectory_eval.py's
+TRAJECTORY_CASES, so the race harness (Week 7) and the trajectory eval (Week 8)
+grade the agent/workflow against the exact same 10 questions - the two eval
+frameworks measure different things (pass/fail vs. tool-path/step-efficiency)
+but should never disagree about WHICH questions are in scope. If you add,
+remove, or reword a case in one file, mirror it in the other.
+
+Covers three reference docs (github_combined_reference.pdf,
+swagger_v2_reference.pdf, swagger_v3_reference.pdf) plus one deliberate
+negative/refusal case. Kept the one case that caught a real product bug during
+a live run (11's hallucination-off-a-decoy), so the set still has diagnostic
+value, not just easy wins.
 
 expected_keywords notes (see race_harness.py's _passed - plain, case-
 insensitive, ALL-must-match substring check, no OR/negation support):
   - Where the literal answer is a generic-looking token (true/false/a bare
     version number), the keyword pairs the FIELD NAME with the VALUE (e.g.
-    ["sortparamsbyrequiredflag", "true"]) instead of just the value alone -
-    a bare "true" or "1.0.0" would pass on nearly any unrelated answer.
-  - A camelCase field name is only kept as ONE merged token (e.g.
-    "sortparamsbyrequiredflag") when it reads as an unmistakable code
-    identifier the model is likely to quote verbatim. When it reads as two
-    or more ordinary English words squashed together (packageVersion,
-    allowUnicodeIdentifiers), split it into separate word keywords instead
-    (["package", "version"], ["allow", "unicode", "identifiers"]) - a real
-    run showed the model naturally writing "package version" (with a
-    space) in prose, which a merged "packageversion" token never matches,
-    wrongly failing an otherwise-correct answer.
+    case 11's ["allow", "unicode", "identifiers", "false"]) instead of just
+    the value alone - a bare "true" or "false" would pass on nearly any
+    unrelated answer.
+  - A camelCase field name is only kept as ONE merged token when it reads as
+    an unmistakable code identifier the model is likely to quote verbatim.
+    When it reads as two or more ordinary English words squashed together
+    (packageVersion, allowUnicodeIdentifiers), split it into separate word
+    keywords instead (["package", "version"], ["allow", "unicode",
+    "identifiers"]) - a real run showed the model naturally writing "package
+    version" (with a space) in prose, which a merged "packageversion" token
+    never matches, wrongly failing an otherwise-correct answer.
   - Case 07's expected answer is "'public_repo' OR 'repo'"; since the
     checker is AND-only, the keyword is just "repo" (a substring of
     "public_repo" too, so either valid answer passes).
@@ -66,19 +69,19 @@ RACE_QUESTIONS = [
         "requires_deprecation_check": False,
         "expected_keywords": ["201", "created"],
     },
+    {
+        "id": "04",
+        "question": "What is the maximum file size limit supported when rendering Markdown content via the GitHub REST API?",
+        "requires_deprecation_check": False,
+        "expected_keywords": ["400", "kb"],
+    },
+    {
+        "id": "09",
+        "question": "What is the default value of the draft parameter when creating a pull request via the GitHub REST API?",
+        "requires_deprecation_check": False,
+        "expected_keywords": ["draft", "false"],
+    },
     # --- swagger_v2_reference.pdf ---
-    {
-        "id": "03",
-        "question": "What is the default library template used by the Java client generator in Swagger Codegen 2.x?",
-        "requires_deprecation_check": False,
-        "expected_keywords": ["okhttp-gson"],
-    },
-    {
-        "id": "06",
-        "question": "What is the default value of sortParamsByRequiredFlag in the Swagger Codegen 2.x Java client generator?",
-        "requires_deprecation_check": False,
-        "expected_keywords": ["sortparamsbyrequiredflag", "true"],
-    },
     {
         "id": "10",
         "question": "What default value does Swagger Codegen 2.x assign to the packageName option in the Python generator?",

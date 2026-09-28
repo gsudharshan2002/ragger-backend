@@ -1,5 +1,5 @@
 import logging
-from contextlib import asynccontextmanager
+from contextlib import AsyncExitStack, asynccontextmanager
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -8,15 +8,26 @@ from fastapi.exceptions import RequestValidationError
 from app.core.config import settings
 from app.core.rate_limit import RateLimitMiddleware
 from app.api.v1.router import api_router
+from app.mcp_server import build_mcp_http_app, mcp as mcp_server
+
+mcp_http_app = build_mcp_http_app()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
-    logging.info(f"Starting {settings.APP_NAME} v1.0")
-    yield
-    # Shutdown
-    logging.info(f"Shutting down {settings.APP_NAME}")
+    async with AsyncExitStack() as stack:
+        # The mounted MCP app's session manager needs its own background
+        # task running for the lifetime of the process - entering it here
+        # (rather than relying on Starlette to start it, which only
+        # happens for a sub-app's OWN lifespan, never automatically for a
+        # mounted one) is the documented way to combine it with ours.
+        await stack.enter_async_context(mcp_server.session_manager.run())
+
+        # Startup
+        logging.info(f"Starting {settings.APP_NAME} v1.0")
+        yield
+        # Shutdown
+        logging.info(f"Shutting down {settings.APP_NAME}")
 
 
 app = FastAPI(
@@ -65,6 +76,10 @@ async def generic_exception_handler(request: Request, exc: Exception):
 
 # Include API router
 app.include_router(api_router, prefix=settings.API_PREFIX)
+
+# MCP server - same tools as the agent (retrieve, check_deprecation_status,
+# answer, finish) exposed over HTTP for any MCP client, local or remote.
+app.mount(f"{settings.API_PREFIX}/mcp", mcp_http_app)
 
 
 @app.get("/health")

@@ -29,7 +29,7 @@ You reason step by step in a Thought -> Action -> Observation loop. At each step
 {"thought": "<your reasoning about what to do next>", "tool": "<retrieve|check_deprecation|answer|finish>", "inputs": {<tool inputs>}}
 
 Available tools:
-- "retrieve": search the knowledge base for context relevant to the question. inputs: {"query": "<search query>"}
+- "retrieve": search the knowledge base for context relevant to the question. inputs: {"query": "<search query>", "strategy": "<optional: vector | bm25 | hybrid | hybrid-rrf | hybrid-rerank | hybrid-rerank-mmr>"}. Leave strategy unset for most questions - it uses the configured default. Only set "bm25" when the query contains an exact technical term, field/parameter name, or identifier likely to appear verbatim in the docs (e.g. "sortParamsByRequiredFlag", "has_downloads"). Only set "vector" for a conceptual/paraphrased question with no exact term to match. Do not guess between the other strategies - if it's not clearly one of these two cases, leave strategy unset.
 - "check_deprecation": determine if a specific API endpoint or feature is deprecated or removed in a given API version, and what replaced it. ONLY use when the question explicitly mentions a specific API version date (e.g., '2022-11-28', '2026-03-10'). Do NOT use for general questions, version-agnostic questions, or questions that don't mention a version date — use retrieve for those. Using this tool on a general question wastes a step. inputs: {"endpoint_or_feature": "<string>", "api_version": "2022-11-28 | 2026-03-10"}
 - "answer": produce the final answer using everything retrieved so far. inputs: {}
 - "finish": stop without producing a new answer (e.g. you already answered in a prior step). inputs: {"message": "<optional note>"}
@@ -217,12 +217,19 @@ class AgentEngine:
 
             if action.tool == AgentTool.RETRIEVE:
                 search_query = action.inputs.get("query") or query
+                call_strategy = strategy
+                raw_strategy = action.inputs.get("strategy")
+                if raw_strategy:
+                    try:
+                        call_strategy = RagStrategy(raw_strategy)
+                    except ValueError:
+                        logger.warning(f"Agent: invalid retrieve strategy '{raw_strategy}' at step {step_number}; using default")
                 yield emit(
                     "agent.action.progress",
                     {"step_number": step_number, "status": "searching", "query": search_query},
                 )
                 try:
-                    chunks = await self.rag_engine.get_context(search_query, strategy, knowledge_base_id)
+                    chunks = await self.rag_engine.get_context(search_query, call_strategy, knowledge_base_id)
                     retrieved_chunks.extend(chunks)
                     observation = AgentObservation(
                         tool=action.tool,
@@ -307,6 +314,16 @@ class AgentEngine:
                     answer_text = "[ANSWER BLOCKED: potentially unsafe content detected]"
 
                 final_answer = answer_text or final_answer
+                if not final_answer:
+                    # The LLM call itself errored or streamed nothing - never
+                    # leave this blank, since a blank answer looks like the
+                    # agent silently did nothing rather than surfacing that
+                    # the call failed.
+                    final_answer = (
+                        f"No answer was generated for this question ({answer_error})."
+                        if answer_error
+                        else "No answer was generated for this question."
+                    )
                 observation = AgentObservation(
                     tool=action.tool,
                     output={"answer": answer_text},
@@ -363,11 +380,44 @@ class AgentEngine:
             if action.tool in (AgentTool.ANSWER, AgentTool.FINISH):
                 break
 
+        BUDGET_EXHAUSTED_MSG = "I could not find a sufficient answer within the allotted reasoning steps."
+
         if not final_answer:
             if steps and steps[-1].action.tool == AgentTool.FINISH:
                 final_answer = steps[-1].observation.output.get("message") or "Finished without producing an answer."
+            elif retrieved_chunks:
+                # Budget exhausted, but the agent DID retrieve something along
+                # the way - make one best-effort answer from it instead of
+                # discarding everything gathered, while still appending the
+                # budget notice so it's clear this wasn't a clean "answer"
+                # tool call (matters for trajectory_pass in the Week 8 eval).
+                prompt = build_prompt(query, retrieved_chunks, RagEngineConfig())
+                best_effort_answer = ""
+                try:
+                    async for chunk in generate_completion_stream(
+                        prompt["system"] + "\n\n--- Context ---\n\n" + prompt["context"],
+                        prompt["user"],
+                        None,
+                        temperature,
+                        _ANSWER_MAX_TOKENS,
+                        1.0,
+                    ):
+                        if chunk["type"] == "token" and chunk.get("content"):
+                            best_effort_answer += chunk["content"]
+                except Exception as e:
+                    logger.error(f"Agent best-effort answer on budget exhaustion failed: {e}")
+
+                if best_effort_answer:
+                    from evals.trajectory_eval import check_output_guardrails
+                    guardrail = check_output_guardrails(best_effort_answer)
+                    if not guardrail["clean"]:
+                        best_effort_answer = "[ANSWER BLOCKED: potentially unsafe content detected]"
+                    final_answer = f"{best_effort_answer}\n\n{BUDGET_EXHAUSTED_MSG}"
+                    sources = [_chunk_to_source(c) for c in retrieved_chunks]
+                else:
+                    final_answer = BUDGET_EXHAUSTED_MSG
             else:
-                final_answer = "I could not find a sufficient answer within the allotted reasoning steps."
+                final_answer = BUDGET_EXHAUSTED_MSG
 
         total_latency_ms = int((time.time() - start_time) * 1000)
 

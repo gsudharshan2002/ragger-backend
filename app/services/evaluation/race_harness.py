@@ -1,7 +1,7 @@
 """Task Set E, Step 4 (revised to match the refined spec): the race harness.
 
 Runs the SAME 10 questions (race_questions.py) through both systems -
-run_agent_loop_skeleton (agent) and run_fixed_workflow (workflow) - and
+run_agent_via_engine (agent) and run_fixed_workflow (workflow) - and
 reports: pass rate, p50 AND p99 latency, input/output tokens reported
 SEPARATELY (not just a combined total), and cost both per-question (all
 10, failures included) and per-SUCCESSFUL-execution (only the passes) -
@@ -11,6 +11,16 @@ answer, which cost-per-question alone hides.
 Pass/fail ground truth is keyword presence in the final answer - the same
 approach used throughout this codebase, since no real LLM-judge exists
 anywhere here.
+
+The agent side runs through AgentEngine (app/services/agent_engine.py) -
+the same class the real chat (/agent/run) and the Week 8 trajectory eval
+use - instead of agent_loop.py's separate "race-harness skeleton". That
+skeleton was its own independent implementation with its own system
+prompt/budgets/dispatch logic, kept in sync with AgentEngine by hand for
+each fix (dedup guard, tightened tool descriptions, etc.) - a real drift
+risk if a future fix ever landed in one and not the other. Racing the
+actual product agent removes that risk; agent_loop.py itself is untouched
+and still used by scripts/demo_budget_termination.py.
 """
 import asyncio
 import csv
@@ -19,11 +29,45 @@ from math import ceil
 from pathlib import Path
 
 from app.core.config import settings
-from app.services.agent_loop import run_agent_loop_skeleton
 from app.services.evaluation.race_questions import RACE_QUESTIONS
 from app.services.workflow_docs import run_fixed_workflow
 
 RESULTS_DIR = Path(__file__).resolve().parents[3]  # ragger-backend/
+
+
+async def run_agent_via_engine(query: str) -> dict:
+    """Run one query through AgentEngine and return the same
+    {answer, total_latency_ms, input_tokens, output_tokens, steps} shape
+    run_fixed_workflow returns, so _run_one can treat both systems
+    identically."""
+    from app.models.schemas import AgentRunRequest
+    from app.services.agent_engine import AgentEngine
+
+    engine = AgentEngine()
+    request = AgentRunRequest(query=query, max_steps=5)
+
+    answer = ""
+    total_latency_ms = 0
+    input_tokens = 0
+    output_tokens = 0
+    steps: list = []
+
+    async for event in engine.run_stream(request):
+        if event.get("type") == "trace.completed":
+            data = event.get("data", {})
+            answer = data.get("answer", "")
+            total_latency_ms = data.get("totalLatencyMs", 0)
+            input_tokens = data.get("inputTokens", 0)
+            output_tokens = data.get("outputTokens", 0)
+            steps = data.get("steps", [])
+
+    return {
+        "answer": answer,
+        "total_latency_ms": total_latency_ms,
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "steps": steps,
+    }
 
 
 def _passed(answer: str, expected_keywords: list[str]) -> bool:
@@ -88,7 +132,7 @@ async def run_race() -> dict:
     for case in RACE_QUESTIONS:
         print(f"Racing case {case['id']}: {case['question'][:70]}...")
 
-        agent_row = await _run_one("agent", run_agent_loop_skeleton, case)
+        agent_row = await _run_one("agent", run_agent_via_engine, case)
         agent_rows.append(agent_row)
         print(
             f"  agent:    pass={agent_row['passed']} latency={agent_row['latency_ms']}ms "
