@@ -203,7 +203,7 @@ async def act(decision: dict, query: str, retrieved_chunks: list) -> dict:
 
     if tool == "retrieve":
         search_query = validated.query or query
-        result = await search_knowledge_base(search_query)
+        result = await search_knowledge_base(search_query, validated.strategy)
         retrieved_chunks.extend(result["raw_chunks"])
         return {"tool": tool, "output": result["summary"]}
 
@@ -297,6 +297,17 @@ async def run_agent_loop_skeleton(query: str) -> dict:
             total_input_tokens += observation["output"].get("input_tokens", 0)
             total_output_tokens += observation["output"].get("output_tokens", 0)
             final_answer = observation["output"].get("answer", "")
+            if not final_answer:
+                # The LLM call itself errored or streamed nothing - never
+                # leave this blank, since a blank answer looks like the agent
+                # silently did nothing rather than surfacing that the call
+                # failed.
+                answer_error = observation["output"].get("error")
+                final_answer = (
+                    f"No answer was generated for this question ({answer_error})."
+                    if answer_error
+                    else "No answer was generated for this question."
+                )
 
         step = {
             "step_number": step_number,
@@ -314,11 +325,23 @@ async def run_agent_loop_skeleton(query: str) -> dict:
     else:
         print(f"BUDGET HIT: max iterations ({MAX_STEPS}) reached without answering. Terminating cleanly.")
 
+    BUDGET_EXHAUSTED_MSG = "I could not find a sufficient answer within the allotted budget."
+
     if not final_answer:
         if history and history[-1]["tool"] == "finish":
             final_answer = history[-1]["observation"]["output"].get("message", "") or "Finished without producing an answer."
+        elif retrieved_chunks:
+            # Budget exhausted, but we DID retrieve something along the way -
+            # make one best-effort answer from it instead of discarding
+            # everything gathered, while still appending the budget notice so
+            # it's clear this wasn't a clean "answer" tool call.
+            result = await generate_answer(query, retrieved_chunks)
+            total_input_tokens += result.get("input_tokens", 0)
+            total_output_tokens += result.get("output_tokens", 0)
+            best_effort_answer = result.get("answer", "")
+            final_answer = f"{best_effort_answer}\n\n{BUDGET_EXHAUSTED_MSG}" if best_effort_answer else BUDGET_EXHAUSTED_MSG
         else:
-            final_answer = "I could not find a sufficient answer within the allotted budget."
+            final_answer = BUDGET_EXHAUSTED_MSG
     elif history and history[-1]["tool"] == "answer":
         await remember(query, final_answer)
         print("  [memory] stored this interaction for future recall.")
