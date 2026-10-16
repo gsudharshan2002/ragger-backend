@@ -488,7 +488,7 @@ async def execute_rag(
         "query.started",
         {
             "query": query,
-            "strategy": config.strategy.value,
+            "strategy": str(config.strategy),
             "request_id": request_id,
             "knowledge_base_id": knowledge_base_id,
         },

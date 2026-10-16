@@ -3,7 +3,7 @@
 Dataset: `evals/developer_docs_cases.json` (10 GitHub API version-specific cases)
 Case IDs: gh-001, gh-002, gh-003, gh-004, gh-005, gh-006, gh-007, gh-008, gh-009, gh-010
 Evaluator: keyword-presence (all expected keywords must appear in answer)
-Model: `groq` / `openai/gpt-oss-20b`
+Model: `nvidia` / `meta-llama/llama-3.3-70b-instruct`
 Cost per token: `5e-07` (estimated, not provider-reported)
 Token method: estimated (word-count heuristic); not provider-reported usage
 
@@ -12,30 +12,31 @@ Token method: estimated (word-count heuristic); not provider-reported usage
 | Metric | Single Agent | Squad |
 |--------|-------------|-----|
 | Pass rate | 0.0% (0/10) | 10.0% (1/10) |
-| p50 latency (ms) | 287 | 4 |
-| p99 latency (ms) | 287 | 16 |
-| Total input tokens | 0 | 1729 |
-| Total output tokens | 0 | 260 |
-| Total tokens | 0 | 1989 |
-| Total cost | $0.000000 | $0.000994 |
-| Avg cost/question | $0.000000 | $0.000099 |
+| p50 latency (ms) | 10932 | 3534 |
+| p99 latency (ms) | 24082 | 12118 |
+| Total input tokens | 249 | 1566 |
+| Total output tokens | 130 | 344 |
+| Total tokens | 379 | 1910 |
+| Total cost | $0.000189 | $0.000955 |
+| Avg cost/question | $0.000019 | $0.000096 |
 
-| Context Re-Send Multiplier | unavailable |
+| Context Re-Send Multiplier | 5.0 |
+| Notes | Multi-Agent Total Tokens / Single-Agent Total Tokens = 1910 / 379 |
 
 ## Per-Case Results
 
 | Case | Single Pass | Single Latency (ms) | Single Tokens | Squad Pass | Squad Latency (ms) | Squad Tokens | Squad Hops |
 |------|-------------|---------------------|---------------|------------|--------------------|--------------|------------|
-| gh-001 | N | 287 | 0 | N | 16 | 195 | 4 |
-| gh-002 | N | 0 | 0 | N | 4 | 179 | 4 |
-| gh-003 | N | 0 | 0 | N | 4 | 220 | 4 |
-| gh-004 | N | 0 | 0 | N | 4 | 204 | 4 |
-| gh-005 | N | 0 | 0 | Y | 4 | 183 | 4 |
-| gh-006 | N | 0 | 0 | N | 4 | 163 | 4 |
-| gh-007 | N | 0 | 0 | N | 4 | 231 | 4 |
-| gh-008 | N | 0 | 0 | N | 4 | 215 | 4 |
-| gh-009 | N | 0 | 0 | N | 4 | 220 | 4 |
-| gh-010 | N | 0 | 0 | N | 5 | 179 | 4 |
+| gh-001 | N | 13225 | 37 | N | 2487 | 160 | 3 |
+| gh-002 | N | 22972 | 33 | N | 5549 | 176 | 3 |
+| gh-003 | N | 7310 | 43 | N | 3116 | 173 | 3 |
+| gh-004 | N | 9746 | 39 | Y | 12118 | 218 | 4 |
+| gh-005 | N | 24082 | 34 | N | 3534 | 183 | 3 |
+| gh-006 | N | 10932 | 29 | N | 5767 | 156 | 3 |
+| gh-007 | N | 11741 | 46 | N | 7111 | 261 | 4 |
+| gh-008 | N | 6457 | 42 | N | 3357 | 205 | 3 |
+| gh-009 | N | 5734 | 43 | N | 2080 | 181 | 3 |
+| gh-010 | N | 12241 | 33 | N | 4813 | 197 | 4 |
 
 ## Methodology Notes
 - Token counts are estimated via word-count heuristic (same as `rag_engine.estimate_tokens`), not provider-reported.
@@ -48,7 +49,7 @@ Token method: estimated (word-count heuristic); not provider-reported usage
 - Source: `orchestrator`
 - Destination: `llm_answer`
 - Purpose: final_answer_generation
-- Tokens: 131 (estimated)
-- % of squad total tokens: 6.6%
+- Tokens: 161 (estimated)
+- % of squad total tokens: 8.4%
 - Case: gh-007
-- Status: failure
+- Status: success

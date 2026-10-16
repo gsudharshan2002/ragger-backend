@@ -78,9 +78,29 @@ def _write_failure_case(trace: dict) -> None:
     code_res = trace["specialist_results"].get("code_sample", {})
 
     answer = trace["orchestrator_answer"]
-    has_unsupported_version_claim = any(
-        k in answer.lower() for k in ["deprecated", "removed", "migrated", "version"]
-    ) and not version_res.get("evidence")
+    answer_lower = answer.lower()
+    # Disclosure language means the orchestrator admitted missing evidence;
+    # that is not an unsupported version claim.
+    is_disclosure = any(
+        phrase in answer_lower
+        for phrase in [
+            "don't have evidence", "do not have evidence",
+            "i'm sorry", "i am sorry", "unable to", "cannot confirm",
+            "verification was unavailable", "no evidence",
+        ]
+    )
+    # Detect actual affirmative version-status claims, not disclosure notes.
+    has_unsupported_version_claim = (
+        not is_disclosure
+        and not version_res.get("evidence")
+        and any(
+            phrase in answer_lower
+            for phrase in [
+                "is deprecated", "is removed", "has been deprecated",
+                "no longer supported", "replaced by",
+            ]
+        )
+    )
 
     lines = []
     lines.append("# Week 10: Controlled HTTP 500 Failure Injection")
