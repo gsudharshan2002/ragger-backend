@@ -19,28 +19,72 @@ from app.models.schemas import (
 from app.services.agent_tools import ApiVersion, check_deprecation
 from app.services.llm import generate_completion_stream, is_llm_configured
 from app.services.rag_engine import RagEngine, build_prompt, estimate_tokens
+from app.services.mcp_client import MCPManager
+from mcp.types import Tool as MCPTool
 
 logger = get_logger(__name__)
 
-REACT_SYSTEM_PROMPT = """You are a ReAct-style research agent that answers questions using a document knowledge base.
+REACT_SYSTEM_PROMPT_FALLBACK = """You are a ReAct-style research agent that answers questions using a document knowledge base.
 
 You reason step by step in a Thought -> Action -> Observation loop. At each step you must respond with a single JSON object and nothing else - no markdown fences, no commentary before or after it:
 
 {"thought": "<your reasoning about what to do next>", "tool": "<retrieve|check_deprecation|answer|finish>", "inputs": {<tool inputs>}}
 
 Available tools:
-- "retrieve": search the knowledge base for context relevant to the question. inputs: {"query": "<search query>"}
-- "check_deprecation": determine if a specific API endpoint or feature is deprecated or removed in a given API version, and what replaced it. Use when the question asks about version-specific changes like 'Does X still exist in version Y?' or 'Was Z removed in 2026-03-10?'. Do NOT use for general knowledge searches — use retrieve for those. inputs: {"endpoint_or_feature": "<string>", "api_version": "2022-11-28 | 2026-03-10"}
+- "retrieve": search the knowledge base for context relevant to the question. inputs: {"query": "<search query>", "strategy": "<optional: vector | bm25 | hybrid | hybrid-rrf | hybrid-rerank | hybrid-rerank-mmr>"}. Leave strategy unset for most questions - it uses the configured default. Only set "bm25" when the query contains an exact technical term, field/parameter name, or identifier likely to appear verbatim in the docs (e.g. "sortParamsByRequiredFlag", "has_downloads"). Only set "vector" for a conceptual/paraphrased question with no exact term to match. Do not guess between the other strategies - if it's not clearly one of these two cases, leave strategy unset.
+- "check_deprecation": determine if a specific API endpoint or feature is deprecated or removed in a given API version, and what replaced it. ONLY use when the question explicitly mentions a specific API version date (e.g., '2022-11-28', '2026-03-10'). Do NOT use for general questions, version-agnostic questions, or questions that don't mention a version date — use retrieve for those. Using this tool on a general question wastes a step. inputs: {"endpoint_or_feature": "<string>", "api_version": "2022-11-28 | 2026-03-10"}
 - "answer": produce the final answer using everything retrieved so far. inputs: {}
 - "finish": stop without producing a new answer (e.g. you already answered in a prior step). inputs: {"message": "<optional note>"}
 
 Rules:
 - Always retrieve at least once before answering, unless earlier steps already retrieved relevant context.
 - Never repeat a "retrieve" call with the same query you already used.
-- Check deprecation status when the question concerns whether something still works on a specific API version.
+- Only check deprecation status when the question explicitly names a specific API version date.
 - Once you have enough context to answer, call "answer" - do not keep retrieving indefinitely.
 - Respond with ONLY the JSON object described in the system prompt.
 """
+
+
+def _format_tool_inputs(tool: MCPTool) -> str:
+    schema = tool.inputSchema or {}
+    properties = schema.get("properties", {})
+    if not properties:
+        return " inputs: {}"
+    parts = [f'{k}: {v.get("type", "any")}' for k, v in properties.items()]
+    return f" inputs: {{{', '.join(parts)}}}"
+
+
+def build_system_prompt(tools: dict[str, MCPTool]) -> str:
+    """Build the system prompt dynamically from discovered MCP tools.
+
+    This enables zero-code addition of new MCP servers - the Agent's
+    system prompt adapts to whatever tools are available via MCP.
+    """
+    tool_descriptions = []
+    for name, tool in tools.items():
+        desc = tool.description or "No description available"
+        inputs_str = _format_tool_inputs(tool)
+        tool_descriptions.append(f'- "{name}": {desc}{inputs_str}')
+
+    tools_section = "\n".join(tool_descriptions)
+
+    return (
+        "You are a ReAct-style research agent that answers questions "
+        "using a document knowledge base.\n\n"
+        "You reason step by step in a Thought -> Action -> Observation "
+        "loop. At each step you must respond with a single JSON object "
+        "and nothing else - no markdown fences, no commentary before or "
+        "after it:\n\n"
+        '{"thought": "<reasoning>", "tool": "<TOOL_NAME>", "inputs": {<inputs>}}\n\n'
+        f"Available tools:\n{tools_section}\n\n"
+        "Rules:\n"
+        "- Always retrieve at least once before answering, unless earlier "
+        "steps already retrieved relevant context.\n"
+        "- Never repeat a retrieve call with the same query you already used.\n"
+        "- Once you have enough context to answer, call \"answer\" - do not "
+        "keep retrieving indefinitely.\n"
+        "- Respond with ONLY the JSON object described in the system prompt."
+    )
 
 _JSON_BLOCK_RE = re.compile(r"\{.*\}", re.DOTALL)
 _ANSWER_MAX_TOKENS = 1024
@@ -74,8 +118,14 @@ def _chunk_to_source(chunk: Any) -> dict[str, Any]:
 
 
 class AgentEngine:
-    def __init__(self):
+    def __init__(self, enable_dedup_guard: bool = True):
         self.rag_engine = RagEngine()
+        # Exists so evals/trajectory_eval.py's run_mitigation_experiment can
+        # measure a real before/after: False reproduces the pre-mitigation
+        # behavior (an LLM can repeat the same retrieve query indefinitely,
+        # up to max_steps) for the "before" run, True (the default, and the
+        # only mode used in production) is the fix.
+        self.enable_dedup_guard = enable_dedup_guard
 
     def _build_react_prompt(self, query: str, history: list[dict[str, Any]], max_steps: int) -> str:
         lines = [f"Question: {query}", f"You have at most {max_steps} reasoning steps total.", ""]
@@ -102,12 +152,13 @@ class AgentEngine:
         history: list[dict[str, Any]],
         max_steps: int,
         temperature: float,
+        system_prompt: str = REACT_SYSTEM_PROMPT_FALLBACK,
     ) -> str:
         prompt = self._build_react_prompt(query, history, max_steps)
         text = ""
 
         async for chunk in generate_completion_stream(
-            REACT_SYSTEM_PROMPT, prompt, None, temperature, _REASON_MAX_TOKENS, 1.0
+            system_prompt, prompt, None, temperature, _REASON_MAX_TOKENS, 1.0
         ):
             if chunk["type"] == "token" and chunk.get("content"):
                 text += chunk["content"]
@@ -169,9 +220,28 @@ class AgentEngine:
             yield {"type": "error", "error": error_msg}
             return
 
+        # Initialize MCP manager if MCP mode is requested
+        mcp_manager = None
+        mcp_system_prompt = REACT_SYSTEM_PROMPT_FALLBACK
+        mcp_tools = {}
+        
+        if request.mcp:
+            try:
+                mcp_manager = await get_mcp_manager()
+                mcp_tools = await mcp_manager.discover_tools()
+                if mcp_tools:
+                    mcp_system_prompt = build_system_prompt(mcp_tools)
+                    logger.info(f"MCP mode enabled with {len(mcp_tools)} tools: {list(mcp_tools.keys())}")
+                else:
+                    logger.warning("MCP requested but no tools discovered from MCP servers")
+            except Exception as e:
+                logger.error(f"Failed to initialize MCP manager: {e}")
+                # Continue with fallback behavior
+
         history: list[dict[str, Any]] = []
         steps: list[AgentStep] = []
         retrieved_chunks: list = []
+        used_queries: set[str] = set()
         final_answer = ""
         sources: list[dict[str, Any]] = []
 
@@ -179,12 +249,25 @@ class AgentEngine:
             yield emit("agent.reason", {"step_number": step_number, "status": "thinking"})
 
             try:
-                raw_output = await self._reason(query, history, max_steps, temperature)
+                raw_output = await self._reason(
+                    query, history, max_steps, temperature, mcp_system_prompt
+                )
             except Exception as e:
                 logger.error(f"Agent reasoning call failed at step {step_number}: {e}")
                 raw_output = ""
 
             reason, action = self._choose_action(raw_output, query)
+
+            if action.tool == AgentTool.RETRIEVE and self.enable_dedup_guard:
+                search_query = action.inputs.get("query") or query
+                if search_query in used_queries:
+                    logger.info(
+                        f"Agent: repeated retrieve query at step {step_number} ('{search_query}'); forcing answer instead"
+                    )
+                    reason = "Already searched for this; answering with what's available instead of repeating."
+                    action = AgentAction(tool=AgentTool.ANSWER, inputs={})
+                else:
+                    used_queries.add(search_query)
 
             yield emit(
                 "agent.reason",
@@ -199,12 +282,19 @@ class AgentEngine:
 
             if action.tool == AgentTool.RETRIEVE:
                 search_query = action.inputs.get("query") or query
+                call_strategy = strategy
+                raw_strategy = action.inputs.get("strategy")
+                if raw_strategy:
+                    try:
+                        call_strategy = RagStrategy(raw_strategy)
+                    except ValueError:
+                        logger.warning(f"Agent: invalid retrieve strategy '{raw_strategy}' at step {step_number}; using default")
                 yield emit(
                     "agent.action.progress",
                     {"step_number": step_number, "status": "searching", "query": search_query},
                 )
                 try:
-                    chunks = await self.rag_engine.get_context(search_query, strategy, knowledge_base_id)
+                    chunks = await self.rag_engine.get_context(search_query, call_strategy, knowledge_base_id)
                     retrieved_chunks.extend(chunks)
                     observation = AgentObservation(
                         tool=action.tool,
@@ -218,6 +308,23 @@ class AgentEngine:
                         output={},
                         latency_ms=int((time.time() - step_start) * 1000),
                         error=str(e),
+                    )
+
+            elif mcp_manager and action.tool in mcp_manager.tool_names and mcp_tools:
+                # MCP tool dispatch - call the tool on the registered MCP server
+                result = await mcp_manager.call_tool(action.tool, action.inputs)
+                if result:
+                    observation = AgentObservation(
+                        tool=action.tool,
+                        output=result if isinstance(result, dict) else {"summary": str(result)},
+                        latency_ms=int((time.time() - step_start) * 1000),
+                    )
+                else:
+                    observation = AgentObservation(
+                        tool=action.tool,
+                        output={},
+                        latency_ms=int((time.time() - step_start) * 1000),
+                        error=f"Tool '{action.tool}' not found on any MCP server",
                     )
 
             elif action.tool == AgentTool.CHECK_DEPRECATION:
@@ -234,6 +341,9 @@ class AgentEngine:
                 try:
                     result = await check_deprecation(endpoint_or_feature, api_version)
                     retrieved_chunks.extend(result["raw_chunks"])
+                    # Sanitize tool output against prompt injection
+                    from evals.trajectory_eval import sanitize_tool_output
+                    result["summary"] = sanitize_tool_output(result["summary"])
                     observation = AgentObservation(
                         tool=action.tool,
                         output=result["summary"],
@@ -279,7 +389,23 @@ class AgentEngine:
                 except Exception as e:
                     answer_error = str(e)
 
+                # Run output guardrails on generated answer
+                from evals.trajectory_eval import check_output_guardrails
+                guardrail = check_output_guardrails(answer_text)
+                if not guardrail["clean"]:
+                    answer_text = "[ANSWER BLOCKED: potentially unsafe content detected]"
+
                 final_answer = answer_text or final_answer
+                if not final_answer:
+                    # The LLM call itself errored or streamed nothing - never
+                    # leave this blank, since a blank answer looks like the
+                    # agent silently did nothing rather than surfacing that
+                    # the call failed.
+                    final_answer = (
+                        f"No answer was generated for this question ({answer_error})."
+                        if answer_error
+                        else "No answer was generated for this question."
+                    )
                 observation = AgentObservation(
                     tool=action.tool,
                     output={"answer": answer_text},
@@ -336,11 +462,44 @@ class AgentEngine:
             if action.tool in (AgentTool.ANSWER, AgentTool.FINISH):
                 break
 
+        BUDGET_EXHAUSTED_MSG = "I could not find a sufficient answer within the allotted reasoning steps."
+
         if not final_answer:
             if steps and steps[-1].action.tool == AgentTool.FINISH:
                 final_answer = steps[-1].observation.output.get("message") or "Finished without producing an answer."
+            elif retrieved_chunks:
+                # Budget exhausted, but the agent DID retrieve something along
+                # the way - make one best-effort answer from it instead of
+                # discarding everything gathered, while still appending the
+                # budget notice so it's clear this wasn't a clean "answer"
+                # tool call (matters for trajectory_pass in the Week 8 eval).
+                prompt = build_prompt(query, retrieved_chunks, RagEngineConfig())
+                best_effort_answer = ""
+                try:
+                    async for chunk in generate_completion_stream(
+                        prompt["system"] + "\n\n--- Context ---\n\n" + prompt["context"],
+                        prompt["user"],
+                        None,
+                        temperature,
+                        _ANSWER_MAX_TOKENS,
+                        1.0,
+                    ):
+                        if chunk["type"] == "token" and chunk.get("content"):
+                            best_effort_answer += chunk["content"]
+                except Exception as e:
+                    logger.error(f"Agent best-effort answer on budget exhaustion failed: {e}")
+
+                if best_effort_answer:
+                    from evals.trajectory_eval import check_output_guardrails
+                    guardrail = check_output_guardrails(best_effort_answer)
+                    if not guardrail["clean"]:
+                        best_effort_answer = "[ANSWER BLOCKED: potentially unsafe content detected]"
+                    final_answer = f"{best_effort_answer}\n\n{BUDGET_EXHAUSTED_MSG}"
+                    sources = [_chunk_to_source(c) for c in retrieved_chunks]
+                else:
+                    final_answer = BUDGET_EXHAUSTED_MSG
             else:
-                final_answer = "I could not find a sufficient answer within the allotted reasoning steps."
+                final_answer = BUDGET_EXHAUSTED_MSG
 
         total_latency_ms = int((time.time() - start_time) * 1000)
 

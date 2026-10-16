@@ -361,6 +361,7 @@ class AgentRunRequest(BaseSchema):
     knowledge_base_id: Optional[str] = None
     max_steps: int = Field(default_factory=lambda: settings.AGENT_MAX_STEPS, ge=1, le=10)
     temperature: float = Field(default_factory=lambda: settings.AGENT_TEMPERATURE)
+    mcp: bool = False
 
 
 class AgentRunResponse(BaseSchema):

@@ -165,6 +165,38 @@ async def run_race_endpoint() -> dict:
             raise HTTPException(status_code=500, detail=f"Race failed: {str(e)}")
 
 
+@router.get("/race/summary")
+async def get_race_summary() -> dict:
+    """Return the latest race.csv summary (pass rate, p50/p99 latency,
+    tokens, cost per system) - the response POST /race returns transiently,
+    made durable across page reloads."""
+    import csv
+
+    csv_path = Path(__file__).resolve().parents[3] / "race.csv"
+    if not csv_path.exists():
+        return {"success": True, "data": []}
+
+    def _float_or_none(value: str) -> Optional[float]:
+        return None if value in ("", "None") else float(value)
+
+    rows: list[dict] = []
+    with open(csv_path, encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            rows.append({
+                "system": row["system"],
+                "passRate": float(row["pass_rate"]),
+                "p50LatencyMs": int(row["p50_latency_ms"]),
+                "p99LatencyMs": int(row["p99_latency_ms"]),
+                "inputTokens": int(row["input_tokens"]),
+                "outputTokens": int(row["output_tokens"]),
+                "costPerQuestion": float(row["cost_per_question"]),
+                "costPerSuccess": _float_or_none(row["cost_per_success"]),
+            })
+
+    return {"success": True, "data": rows}
+
+
 @router.get("/race/results")
 async def get_race_results() -> dict:
     """Return the latest race details from race_details.csv."""
@@ -196,6 +228,35 @@ async def get_race_results() -> dict:
                 wf_rows.append(entry)
 
     return {"success": True, "data": {"agent": agent_rows, "workflow": wf_rows}}
+
+
+@router.post("/trajectory/run")
+async def run_trajectory_eval_endpoint() -> dict:
+    """Run the Week 8 trajectory evaluation (baseline, mitigation experiment,
+    regression matrix, and bonus injection-defense test)."""
+    from evals.trajectory_eval import main as run_trajectory_eval
+
+    async with _run_lock:
+        try:
+            report = await run_trajectory_eval()
+            return {"success": True, "data": report}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Trajectory eval failed: {str(e)}")
+
+
+@router.get("/trajectory/results")
+async def get_trajectory_results() -> dict:
+    """Return the latest saved trajectory eval report, or null if none exists yet."""
+    report_path = _DEVELOPER_DOC_RESULTS_DIR / "trajectory_eval_report.json"
+    if not report_path.exists():
+        return {"success": True, "data": None}
+
+    try:
+        data = json.loads(report_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {"success": True, "data": None}
+
+    return {"success": True, "data": data}
 
 
 @router.post("/developer-docs/run")

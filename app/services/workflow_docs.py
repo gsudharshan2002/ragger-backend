@@ -40,9 +40,19 @@ async def run_fixed_workflow(query: str) -> dict:
     answer_result = await generate_answer(query, retrieved_chunks)
     steps.append({"tool": "answer", "latency_ms": int((time.time() - t0) * 1000)})
 
+    answer_text = answer_result.get("answer", "")
+    error = answer_result.get("error")
+    if not answer_text:
+        # generate_answer can come back with an empty string (the LLM call
+        # errored before streaming any content) - never leave this blank,
+        # since a blank cell in the race/UI results looks like the workflow
+        # silently did nothing rather than surfacing that the LLM call itself
+        # failed.
+        answer_text = f"No answer was generated for this question ({error})." if error else "No answer was generated for this question."
+
     return {
-        "answer": answer_result.get("answer", ""),
-        "error": answer_result.get("error"),
+        "answer": answer_text,
+        "error": error,
         "total_latency_ms": int((time.time() - start) * 1000),
         "input_tokens": answer_result.get("input_tokens", 0),
         "output_tokens": answer_result.get("output_tokens", 0),

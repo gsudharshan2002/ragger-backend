@@ -1,0 +1,372 @@
+{
+  "description": "MCP Protocol Wire Capture - Week 9 Challenge",
+  "architecture": "MCP Host/Client communicates with MCP Servers via HTTP Streamable transport",
+  "servers": {
+    "ragger-tools": {
+      "url": "http://localhost:8000/api/v1/mcp",
+      "transport": "HTTP Streamable",
+      "stateless": true
+    },
+    "package-registry": {
+      "url": "http://localhost:8000/api/v1/mcp/package-registry",
+      "transport": "HTTP Streamable",
+      "stateless": true
+    }
+  },
+  "messages": [
+    {
+      "phase": "1. initialize",
+      "direction": "client \u2192 server",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "initialize",
+        "params": {
+          "protocolVersion": "2024-11-05",
+          "capabilities": {},
+          "clientInfo": {
+            "name": "ragger-agent",
+            "version": "1.0.0"
+          }
+        }
+      }
+    },
+    {
+      "phase": "1. initialize response",
+      "direction": "server \u2192 client",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+          "protocolVersion": "2024-11-05",
+          "capabilities": {
+            "tools": {}
+          },
+          "serverInfo": {
+            "name": "ragger-tools",
+            "version": "1.0.0"
+          }
+        }
+      }
+    },
+    {
+      "phase": "2. tools/list (ragger-tools)",
+      "direction": "client \u2192 server",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 2,
+        "method": "tools/list",
+        "params": {}
+      },
+      "note": "Client discovers available tools from ragger-tools MCP server"
+    },
+    {
+      "phase": "2. tools/list response (ragger-tools)",
+      "direction": "server \u2192 client",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 2,
+        "result": {
+          "tools": [
+            {
+              "name": "retrieve",
+              "description": "Open-ended search of the knowledge base for context relevant to `query`.\n\nstrategy: optional - one of vector | bm25 | hybrid | hybrid-rrf |\nhybrid-rerank | hybrid-rerank-mmr. Leave unset to use the server's\nconfigured default. Use 'bm25' when the query contains an exact\ntechnical term, field/parameter name, or identifier likely to appear\nverbatim in the docs. Use 'vector' for a conceptual/paraphrased\nquestion with no exact term to match. Leave unset otherwise.\n\nknowledge_base_id: optional - restrict the search to a single\nknowledge base instead of searching across all of them.\n\nReturns the matching chunks. Pass them to `answer` to generate a\nfinal answer once you've gathered enough context.\n",
+              "input_schema": {
+                "properties": {
+                  "query": {
+                    "title": "Query",
+                    "type": "string"
+                  },
+                  "strategy": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "title": "Strategy"
+                  },
+                  "knowledge_base_id": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "title": "Knowledge Base Id"
+                  }
+                },
+                "required": [
+                  "query"
+                ],
+                "title": "retrieveArguments",
+                "type": "object"
+              }
+            },
+            {
+              "name": "check_deprecation_status",
+              "description": "Check whether a specific API endpoint or feature is deprecated or\nremoved in a given API version, and what replaced it.\n\nONLY use when the question explicitly mentions a specific API version\ndate. Do NOT use for general or version-agnostic questions - use\n`retrieve` for those; using this tool on a general question wastes a\nstep.\n\napi_version: one of 2022-11-28 | 2026-03-10 - the two versions indexed\nin the knowledge base.\n\nReturns matching deprecation changelog chunks. Pass them to `answer`\nto generate a final answer.\n",
+              "input_schema": {
+                "properties": {
+                  "endpoint_or_feature": {
+                    "title": "Endpoint Or Feature",
+                    "type": "string"
+                  },
+                  "api_version": {
+                    "title": "Api Version",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "endpoint_or_feature",
+                  "api_version"
+                ],
+                "title": "check_deprecation_statusArguments",
+                "type": "object"
+              }
+            },
+            {
+              "name": "answer",
+              "description": "Produce the final answer to `query` using previously retrieved\ncontext.\n\nchunks: the exact `chunks` list returned by a prior `retrieve` or\n`check_deprecation_status` call (call one of those first - this tool\ndoes not search the knowledge base itself). Pass an empty list to get\na \"no context\" answer.\n",
+              "input_schema": {
+                "properties": {
+                  "query": {
+                    "title": "Query",
+                    "type": "string"
+                  },
+                  "chunks": {
+                    "items": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    },
+                    "title": "Chunks",
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "query",
+                  "chunks"
+                ],
+                "title": "answerArguments",
+                "type": "object"
+              }
+            },
+            {
+              "name": "finish",
+              "description": "Stop without producing a new answer. Doesn't touch the knowledge\nbase or the LLM - use it purely to end a multi-step research sequence\ncleanly and leave an optional closing note.",
+              "input_schema": {
+                "properties": {
+                  "message": {
+                    "default": "",
+                    "title": "Message",
+                    "type": "string"
+                  }
+                },
+                "title": "finishArguments",
+                "type": "object"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "phase": "2. tools/list (package-registry)",
+      "direction": "client \u2192 server",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 3,
+        "method": "tools/list",
+        "params": {}
+      },
+      "note": "Client discovers available tools from package-registry MCP server"
+    },
+    {
+      "phase": "2. tools/list response (package-registry)",
+      "direction": "server \u2192 client",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 3,
+        "result": {
+          "tools": [
+            {
+              "name": "search_packages",
+              "description": "Search for packages by name, keyword, or description.\n\nquery: Search term (package name, keyword, or partial description)\nlimit: Maximum number of results to return (default 10)\n\nReturns a list of matching packages with basic info.\nUse get_package_info for full details.\n",
+              "input_schema": {
+                "properties": {
+                  "query": {
+                    "title": "Query",
+                    "type": "string"
+                  },
+                  "limit": {
+                    "default": 10,
+                    "title": "Limit",
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "query"
+                ],
+                "title": "search_packagesArguments",
+                "type": "object"
+              }
+            },
+            {
+              "name": "get_package_info",
+              "description": "Get detailed information about a specific package.\n\nname: Exact package name (case-sensitive)\nversion: Optional specific version. If omitted, returns latest version info.\n\nReturns full package metadata including dependencies, repository, etc.\n",
+              "input_schema": {
+                "properties": {
+                  "name": {
+                    "title": "Name",
+                    "type": "string"
+                  },
+                  "version": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "title": "Version"
+                  }
+                },
+                "required": [
+                  "name"
+                ],
+                "title": "get_package_infoArguments",
+                "type": "object"
+              }
+            },
+            {
+              "name": "check_package_dependencies",
+              "description": "Check the dependencies of a package.\n\nname: Package name\ninclude_transitive: If true, recursively resolve transitive dependencies\n\nReturns the dependency tree. For this demo, only direct dependencies are available.\n",
+              "input_schema": {
+                "properties": {
+                  "name": {
+                    "title": "Name",
+                    "type": "string"
+                  },
+                  "include_transitive": {
+                    "default": false,
+                    "title": "Include Transitive",
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "name"
+                ],
+                "title": "check_package_dependenciesArguments",
+                "type": "object"
+              }
+            },
+            {
+              "name": "list_all_packages",
+              "description": "List all packages in the registry with pagination.\n\nlimit: Maximum packages to return (default 50, max 100)\noffset: Number of packages to skip (for pagination)\n\nReturns paginated list of all packages.\n",
+              "input_schema": {
+                "properties": {
+                  "limit": {
+                    "default": 50,
+                    "title": "Limit",
+                    "type": "integer"
+                  },
+                  "offset": {
+                    "default": 0,
+                    "title": "Offset",
+                    "type": "integer"
+                  }
+                },
+                "title": "list_all_packagesArguments",
+                "type": "object"
+              }
+            },
+            {
+              "name": "finish",
+              "description": "Stop without producing a new answer. Doesn't touch the registry - use it\npurely to end a multi-step research sequence cleanly and leave an optional\nclosing note.",
+              "input_schema": {
+                "properties": {
+                  "message": {
+                    "default": "",
+                    "title": "Message",
+                    "type": "string"
+                  }
+                },
+                "title": "finishArguments",
+                "type": "object"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "phase": "3. tools/call",
+      "direction": "client \u2192 server",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 4,
+        "method": "tools/call",
+        "params": {
+          "name": "search_packages",
+          "arguments": {
+            "query": "fastapi"
+          }
+        }
+      },
+      "note": "Agent calls a tool on the MCP server using discovered tool name"
+    },
+    {
+      "phase": "3. tools/call response",
+      "direction": "server \u2192 client",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 4,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"query\": \"fastapi\", \"total_matches\": 1, \"packages\": [{\"name\": \"fastapi\", \"version\": \"0.115.0\", \"description\": \"FastAPI framework, high performance, easy to learn, fast to code\", \"author\": \"Sebasti\\u00e1n Ram\\u00edrez\", \"license\": \"MIT\"}]}"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "tool_counts": {
+    "before_mcp": 0,
+    "after_ragger_tools": 4,
+    "after_package_registry": 9,
+    "ragger_tools": [
+      "retrieve",
+      "check_deprecation_status",
+      "answer",
+      "finish"
+    ],
+    "package_registry": [
+      "search_packages",
+      "get_package_info",
+      "check_package_dependencies",
+      "list_all_packages",
+      "finish"
+    ]
+  },
+  "key_fields_explained": {
+    "jsonrpc": "JSON-RPC version - always 2.0 for MCP",
+    "id": "Request ID - matches request to response for correlation",
+    "method": "The MCP method being called (initialize, tools/list, tools/call)",
+    "params": "Method-specific parameters",
+    "result": "The response data from the server",
+    "tools": "List of available tools from tools/list response",
+    "name": "Tool name - used as identifier when calling tools/call",
+    "description": "Human-readable description of what the tool does",
+    "input_schema": "JSON Schema defining the tool input parameters"
+  }
+}
