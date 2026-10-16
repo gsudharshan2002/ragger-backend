@@ -38,6 +38,32 @@ async def agent_run(request: AgentRunRequest, req: Request):
     )
 
 
+@agent_router.post("/run-langgraph")
+async def agent_run_langgraph(request: AgentRunRequest, req: Request):
+    """Stream a LangGraph-based agent run as Server-Sent Events."""
+    check_chat_rate_limit(req)
+
+    from app.services.langgraph_agent import LangGraphAgent
+
+    engine = LangGraphAgent()
+
+    async def event_generator() -> AsyncGenerator[str, None]:
+        async for event in engine.run_stream(request):
+            yield f"data: {json.dumps(jsonable_encoder(event))}\n\n"
+
+        yield "data: [DONE]\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
 @agent_router.get("/memory")
 async def list_agent_memory(page: int = 1, page_size: int = 10) -> dict:
     """Paginated view of the agent's stored (query, answer) memories

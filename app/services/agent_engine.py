@@ -529,3 +529,16 @@ class AgentEngine:
             logger.error(f"Failed to persist agent trace: {e}")
 
         yield emit("trace.completed", response.model_dump(by_alias=True))
+
+
+class LangGraphAgentWrapper:
+    """Wrapper that delegates to LangGraphAgent while preserving AgentEngine interface."""
+
+    def __init__(self):
+        from app.services.langgraph_agent import LangGraphAgent
+
+        self._agent = LangGraphAgent()
+
+    async def run_stream(self, request: AgentRunRequest):
+        async for event in self._agent.run_stream(request):
+            yield event
