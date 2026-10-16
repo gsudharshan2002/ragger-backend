@@ -19,6 +19,16 @@ from app.services.embeddings import (
     is_embedding_configured,
     generate_query_embedding,
 )
+from app.services.observability import (
+    begin_trace,
+    span_ctx,
+    start_span,
+    get_active_trace,
+    set_active_trace,
+    estimate_cost_usd,
+)
+from app.services.retrieval_cache import get as retrieval_cache_get
+from app.services.retrieval_cache import set as retrieval_cache_set
 from app.services.search import (
     VectorResult,
     BM25Result,
@@ -390,6 +400,26 @@ async def execute_rag(
     run_id = str(uuid4())
     request_id = str(uuid4())
 
+    # ---------------------------------------------------------
+    # Week 11: request-level observability context
+    # ---------------------------------------------------------
+
+    trace_ctx = begin_trace(
+        request_id=request_id,
+        prompt_version=settings.PROMPT_VERSION,
+        model_provider=settings.LLM_PROVIDER,
+        model_id=(
+            settings.GROQ_MODEL
+            if settings.LLM_PROVIDER == "groq"
+            else settings.GEMINI_MODEL
+            if settings.LLM_PROVIDER == "gemini"
+            else settings.OPENROUTER_MODEL
+        ),
+        endpoint="/api/v1/chat/stream",
+        mode="rag",
+        sanitized_input=query,
+    )
+
     start_time = datetime.now(timezone.utc)
 
     # ---------------------------------------------------------
@@ -552,6 +582,12 @@ async def execute_rag(
 
     final_chunks: list = []
 
+    # Week 11: retrieval cache - skip retrieval on cache hit.
+    _cached_chunks = retrieval_cache_get(query, config.strategy, knowledge_base_id)
+    if _cached_chunks is not None:
+        trace_ctx.cache_hit = True
+        final_chunks = list(_cached_chunks)
+
     answer = ""
 
     llm_input_tokens: Optional[int] = None
@@ -565,7 +601,14 @@ async def execute_rag(
     # Vector Search
     # ---------------------------------------------------------
 
-    if should_run_vector(config.strategy):
+    if should_run_vector(config.strategy) and final_chunks is None:
+        # Week 11: retrieval sub-step span
+        vector_span = start_span(
+            trace_id,
+            "retrieval.vector",
+            tool_name="vector_search",
+            metadata={"top_k": config.vector.top_k},
+        )
         yield emit(
             "vector",
             "vector.started",
@@ -649,12 +692,20 @@ async def execute_rag(
                     ),
                 },
             )
+        vector_span.finish(status="success")
 
     # ---------------------------------------------------------
     # BM25 Search
     # ---------------------------------------------------------
 
-    if should_run_bm25(config.strategy):
+    if should_run_bm25(config.strategy) and final_chunks is None:
+        # Week 11: retrieval sub-step span
+        bm25_span = start_span(
+            trace_id,
+            "retrieval.bm25",
+            tool_name="bm25_search",
+            metadata={"top_k": config.bm25.top_k},
+        )
         yield emit(
             "bm25",
             "bm25.started",
@@ -700,12 +751,20 @@ async def execute_rag(
                 )
             },
         )
+        bm25_span.finish(status="success")
 
     # ---------------------------------------------------------
     # RRF Fusion
     # ---------------------------------------------------------
 
-    if should_run_rrf(config.strategy):
+    if should_run_rrf(config.strategy) and final_chunks is None:
+        # Week 11: retrieval sub-step span
+        rrf_span = start_span(
+            trace_id,
+            "retrieval.rrf",
+            tool_name="rrf_fusion",
+            metadata={"k": config.rrf.k},
+        )
         yield emit(
             "rrf",
             "rrf.started",
@@ -742,6 +801,7 @@ async def execute_rag(
                 ),
             },
         )
+        rrf_span.finish(status="success")
 
     # ---------------------------------------------------------
     # Reranker
@@ -753,7 +813,15 @@ async def execute_rag(
             config,
         )
         and fused_results
+        and final_chunks is None
     ):
+        # Week 11: retrieval sub-step span (reranker)
+        rerank_span = start_span(
+            trace_id,
+            "retrieval.reranker",
+            tool_name="reranker",
+            metadata={"model": config.reranker.model},
+        )
         yield emit(
             "reranker",
             "reranker.started",
@@ -799,6 +867,7 @@ async def execute_rag(
                 ),
             },
         )
+        rerank_span.finish(status="success")
 
     # ---------------------------------------------------------
     # MMR
@@ -810,7 +879,15 @@ async def execute_rag(
             config,
         )
         and rerank_results
+        and final_chunks is None
     ):
+        # Week 11: retrieval sub-step span (mmr)
+        mmr_span = start_span(
+            trace_id,
+            "retrieval.mmr",
+            tool_name="mmr",
+            metadata={"lambda": config.mmr.lambda_},
+        )
         yield emit(
             "mmr",
             "mmr.started",
@@ -861,20 +938,25 @@ async def execute_rag(
                 ),
             },
         )
+        mmr_span.finish(status="success")
 
     # ---------------------------------------------------------
     # Build final context
     # ---------------------------------------------------------
 
-    final_chunks = _build_final_context(
-        config.strategy,
-        vector_results,
-        bm25_results,
-        fused_results,
-        rerank_results,
-        mmr_results,
-        config,
-    )
+    if final_chunks is None:
+        final_chunks = _build_final_context(
+            config.strategy,
+            vector_results,
+            bm25_results,
+            fused_results,
+            rerank_results,
+            mmr_results,
+            config,
+        )
+        retrieval_cache_set(
+            query, config.strategy, final_chunks, knowledge_base_id
+        )
 
     if not final_chunks:
         error_msg = "I could not find that information in the provided documents."
@@ -981,6 +1063,12 @@ async def execute_rag(
             error_msg,
             knowledge_base_id,
             start_time,
+            spans=[s.to_dict() for s in trace_ctx.spans],
+            prompt_version=trace_ctx.prompt_version,
+            cost_usd=round(trace_ctx.total_cost_usd, 6),
+            cache_hit=trace_ctx.cache_hit,
+            input_tokens=trace_ctx.input_tokens,
+            output_tokens=trace_ctx.output_tokens,
         )
 
         return
@@ -1200,6 +1288,12 @@ async def execute_rag(
             error_msg,
             knowledge_base_id,
             start_time,
+            spans=[s.to_dict() for s in trace_ctx.spans],
+            prompt_version=trace_ctx.prompt_version,
+            cost_usd=round(trace_ctx.total_cost_usd, 6),
+            cache_hit=trace_ctx.cache_hit,
+            input_tokens=trace_ctx.input_tokens,
+            output_tokens=trace_ctx.output_tokens,
         )
 
         return
@@ -1356,6 +1450,12 @@ async def _finalize_trace(
     error: Optional[str],
     knowledge_base_id: Optional[str],
     start_time: datetime,
+    spans: Optional[list[dict]] = None,
+    prompt_version: Optional[str] = None,
+    cost_usd: Optional[float] = None,
+    cache_hit: Optional[bool] = None,
+    input_tokens: int = 0,
+    output_tokens: int = 0,
 ) -> FullTrace:
 
     # ---------------------------------------------------------
@@ -1460,6 +1560,12 @@ async def _finalize_trace(
         ],
         total_latency_ms=total_latency_ms,
         status=overall_status,
+        spans=spans or [],
+        prompt_version=prompt_version,
+        cost_usd=cost_usd,
+        cache_hit=cache_hit,
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
     )
 
     if error:
