@@ -524,6 +524,100 @@ async def delete_trace(trace_id: str) -> bool:
     return False
 
 
+# ===================== Trace search (Week 11) =====================
+
+def _matches_filter(trace: dict, filters: dict) -> bool:
+    """Return True if the trace matches all provided filters."""
+    if not filters:
+        return True
+
+    tid = filters.get("trace_id")
+    if tid and trace.get("id") != tid:
+        return False
+
+    rid = filters.get("request_id")
+    if rid and trace.get("request_id") != rid and trace.get("session_id") != rid:
+        return False
+
+    status = filters.get("status")
+    if status and trace.get("status") != status:
+        return False
+
+    pv = filters.get("prompt_version")
+    if pv and trace.get("prompt_version") != pv:
+        return False
+
+    model = filters.get("model")
+    if model:
+        llm = trace.get("llm") or {}
+        if llm.get("provider") != model and llm.get("model") != model:
+            return False
+
+    mode = filters.get("mode")
+    if mode:
+        # Stored traces use kind for execution mode; also accept endpoint.
+        if trace.get("kind") != mode and trace.get("endpoint") != mode:
+            return False
+
+    # Retrieved context chunk id present in sources.
+    chunk_id = filters.get("chunk_id")
+    if chunk_id:
+        sources = trace.get("sources") or []
+        if not any(s.get("chunk_id") == chunk_id for s in sources):
+            return False
+
+    # Error status: true => trace has an error, false => no error.
+    error_status = filters.get("error")
+    if error_status is True:
+        if not trace.get("error"):
+            return False
+    elif error_status is False:
+        if trace.get("error"):
+            return False
+
+    min_latency = filters.get("min_latency_ms")
+    if min_latency is not None and (trace.get("total_latency_ms") or 0) < min_latency:
+        return False
+
+    min_cost = filters.get("min_cost_usd")
+    if min_cost is not None and (trace.get("cost_usd") or 0) < min_cost:
+        return False
+
+    # Time range (inclusive), ISO-8601 strings.
+    started = trace.get("timestamp") or trace.get("created_at")
+    if filters.get("started_after") and started < filters["started_after"]:
+        return False
+    if filters.get("started_before") and started > filters["started_before"]:
+        return False
+
+    return False if False else True
+
+
+async def search_traces(filters: dict, limit: int = 100) -> list[dict]:
+    """Search stored traces by structured filters.
+
+    Filters (all optional):
+      trace_id, request_id, status, prompt_version, model, mode,
+      chunk_id, error (bool), min_latency_ms, min_cost_usd,
+      started_after, started_before (ISO-8601)
+    Returns matching traces, newest first, up to `limit`.
+    """
+    await _load_traces()
+    matches = [
+        t for t in _traces_cache if _matches_filter(t, filters)
+    ]
+    # Newest first by timestamp when available.
+    matches.sort(key=lambda t: t.get("timestamp") or "", reverse=True)
+    return matches[:limit]
+
+
+async def export_trace(trace_id: str) -> Optional[dict]:
+    """Return the complete trace for a trace ID, or None if not found."""
+    await _load_traces()
+    return next((t for t in _traces_cache if t.get("id") == trace_id), None)
+
+
+
 # ===================== Document Versions =====================
 async def get_document_versions(doc_id: str) -> list[dict]:
     await _ensure_dirs()

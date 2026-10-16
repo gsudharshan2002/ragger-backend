@@ -12,6 +12,7 @@ logger = get_logger(__name__)
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
+NVIDIA_API_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
 
 DEFAULT_SYSTEM_PROMPT = (
     "You are a RAG assistant. Answer only using the <source> entries inside the "
@@ -76,6 +77,8 @@ def _get_api_key(provider: str) -> Optional[str]:
         return settings.GEMINI_API_KEY
     if provider == "openrouter":
         return settings.OPENROUTER_API_KEY
+    if provider == "nvidia":
+        return settings.NVIDIA_API_KEY
     return settings.GROQ_API_KEY
 
 
@@ -86,6 +89,8 @@ def get_api_url(provider: str) -> str:
         return GEMINI_API_URL
     if provider == "openrouter":
         return OPENROUTER_API_URL
+    if provider == "nvidia":
+        return NVIDIA_API_URL
     return GROQ_API_URL
 
 
@@ -95,6 +100,8 @@ def get_persisted_provider_and_keys(persisted: dict) -> tuple[str, Optional[str]
         api_key = persisted.get("geminiApiKey") or settings.GEMINI_API_KEY
     elif provider == "openrouter":
         api_key = persisted.get("openrouterApiKey") or settings.OPENROUTER_API_KEY
+    elif provider == "nvidia":
+        api_key = persisted.get("nvidiaApiKey") or settings.NVIDIA_API_KEY
     else:
         api_key = persisted.get("groqApiKey") or settings.GROQ_API_KEY
     return provider, api_key
@@ -125,6 +132,7 @@ async def generate_completion_stream(
         env_var = {
             "gemini": "GEMINI_API_KEY",
             "openrouter": "OPENROUTER_API_KEY",
+            "nvidia": "NVIDIA_API_KEY",
         }.get(provider, "GROQ_API_KEY")
         yield {
             "type": "error",
@@ -137,6 +145,8 @@ async def generate_completion_stream(
             model = persisted.get("geminiModel") or settings.GEMINI_MODEL
         elif provider == "openrouter":
             model = persisted.get("openrouterModel") or settings.OPENROUTER_MODEL
+        elif provider == "nvidia":
+            model = persisted.get("nvidiaModel") or settings.NVIDIA_MODEL
         else:
             model = persisted.get("groqModel") or settings.GROQ_MODEL
     messages = [
