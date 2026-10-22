@@ -558,5 +558,29 @@
       "attestations",
       "comparison"
     ]
+  },
+  {
+    "id": "gh-deprecated-001",
+    "question": "When creating a GitHub issue via POST /repos/{owner}/{repo}/issues, which field assigns users instead of the deprecated assignee field?",
+    "expected_answer_keywords": [
+      "assignees"
+    ],
+    "prohibited_keywords": [
+      "assignee"
+    ],
+    "expected_sources": [
+      {
+        "document": "current-version.md",
+        "page": 1
+      }
+    ],
+    "problem_type": "retrieval",
+    "mode": "regression_deprecated",
+    "tags": [
+      "github-api",
+      "issues",
+      "deprecated",
+      "regression"
+    ]
   }
 ]

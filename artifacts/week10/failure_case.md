@@ -25,20 +25,22 @@ Question: Does the current version of GET /repos/{owner}/{repo} still include a 
 
 ## Actual Orchestrator Response
 ```
-No answer was generated (GROQ_API_KEY is not set. Please add it in Settings or set it in your .env file.)
+I’m sorry, but the provided evidence does not contain information about whether the current version of `GET /repos/{owner}/{repo}` includes a `has_downloads` field.
+
+Note: version/deprecation verification was unavailable for this question.
 ```
 
 ## Graceful Degradation
 - Complete answer: `yes`
-- Missing version verification disclosed: `no`
+- Missing version verification disclosed: `yes`
 - Unsupported version claims/hallucinated code: `no`
 
 ## Execution Trace References
-- Total latency: 14ms
-- Input tokens: 137 (estimated)
-- Output tokens: 31 (estimated)
-- Total tokens: 168 (estimated)
-- Handoffs: 4
+- Total latency: 3663ms
+- Input tokens: 122 (estimated)
+- Output tokens: 45 (estimated)
+- Total tokens: 167 (estimated)
+- Handoffs: 3
 
 ## Version/Deprecation Worker Result
 - Status: `failure`
@@ -46,12 +48,12 @@ No answer was generated (GROQ_API_KEY is not set. Please add it in Settings or s
 - Error: `HTTP 500: version/deprecation check failed for Does the current version of GET /repos/{owner}/{repo} still include a has_downloads field?@2026-03-10`
 
 ## Code-Sample Worker Result
-- Status: `error`
+- Status: `None`
 - Evidence: `False`
 
 ## Final Conclusion
-- Graceful degradation: `no`
+- Graceful degradation: `yes`
 - No unsupported claims: `yes`
 
-The orchestrator did not adequately disclose the version/deprecation failure.
+The orchestrator gracefully degraded and disclosed the missing verification the version/deprecation failure.
 No hallucinated version-specific claims were detected.

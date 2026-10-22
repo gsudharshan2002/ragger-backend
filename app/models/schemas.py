@@ -288,6 +288,13 @@ class FullTrace(BaseSchema):
     difficulty_breakdown: dict[str, Any] = Field(default_factory=dict)
     tag_breakdown: dict[str, Any] = Field(default_factory=dict)
     failure_categories: list[dict[str, Any]] = Field(default_factory=list)
+    # --- Week 11 observability fields (additive, backward compatible) ---
+    spans: list[dict[str, Any]] = Field(default_factory=list)
+    prompt_version: Optional[str] = None
+    cost_usd: Optional[float] = None
+    cache_hit: Optional[bool] = None
+    input_tokens: int = 0
+    output_tokens: int = 0
 
 
 # API Request/Response Models

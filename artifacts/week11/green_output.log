@@ -1,0 +1,15 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.15.0, pytest-9.1.1, pluggy-1.7.0 -- /usr/local/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/sudharshan.g/Documents/rag-app/ragger-backend
+configfile: pyproject.toml
+plugins: asyncio-1.4.0, langsmith-0.14.9, anyio-4.15.1
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 4 items
+
+tests/test_week11_regression.py::test_dataset_case_exists PASSED         [ 25%]
+tests/test_week11_regression.py::test_system_prompt_prohibits_deprecated_methods PASSED [ 50%]
+tests/test_week11_regression.py::test_retrieved_context_surfaces_current_replacement PASSED [ 75%]
+tests/test_week11_regression.py::test_incident_trace_is_searchable PASSED [100%]
+
+============================== 4 passed in 0.01s ===============================
