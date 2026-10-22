@@ -362,6 +362,7 @@ class AgentRunRequest(BaseSchema):
     max_steps: int = Field(default_factory=lambda: settings.AGENT_MAX_STEPS, ge=1, le=10)
     temperature: float = Field(default_factory=lambda: settings.AGENT_TEMPERATURE)
     mcp: bool = False
+    langgraph: bool = False
 
 
 class AgentRunResponse(BaseSchema):

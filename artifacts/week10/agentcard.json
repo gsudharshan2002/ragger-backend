@@ -1,0 +1,80 @@
+{
+  "schema": "https://agentcard.org/v1",
+  "agent": {
+    "name": "ragger-squad-orchestrator",
+    "version": "1.0.0",
+    "description": "Manager-plus-two-specialists multi-agent RAG orchestrator for developer-documentation questions. Delegates to version/deprecation and code-sample workers, combines evidence, and returns a final answer with source references.",
+    "purpose": "answer_developer_documentation_questions"
+  },
+  "capabilities": [
+    "question_analysis",
+    "version_deprecation_check",
+    "code_sample_retrieval",
+    "evidence_combining",
+    "final_answer_generation",
+    "graceful_degradation_on_worker_failure"
+  ],
+  "workers": [
+    {
+      "name": "version_deprecation",
+      "role": "checks API version/deprecation status via RAG tools",
+      "tools": [
+        "check_deprecation",
+        "search_knowledge_base"
+      ]
+    },
+    {
+      "name": "code_sample",
+      "role": "retrieves documentation and code examples",
+      "tools": [
+        "search_knowledge_base"
+      ]
+    }
+  ],
+  "input": {
+    "endpoint": "/api/v1/squad/run",
+    "method": "POST",
+    "body": {
+      "query": "string (developer-documentation question)",
+      "strategy": "optional RAG strategy",
+      "knowledge_base_id": "optional knowledge base id",
+      "max_steps": "optional int (1-10)",
+      "temperature": "optional float"
+    }
+  },
+  "output": {
+    "format": "Server-Sent Events (text/event-stream)",
+    "events": [
+      "squad.progress",
+      "squad.completed",
+      "[DONE]"
+    ],
+    "fields": [
+      "answer",
+      "steps",
+      "specialist_results",
+      "handoffs",
+      "input_tokens",
+      "output_tokens",
+      "total_tokens",
+      "cost"
+    ]
+  },
+  "delegation": {
+    "strategy": "manager_plus_two_specialists",
+    "hops_logged": "artifacts/week10/handoffs.log (JSON Lines)",
+    "fault_injection": "RAGGER_FAULT_INJECTION=1 + RAGGER_FAULT_CASE_ID=<case> (experiment only)"
+  },
+  "authentication": {
+    "required": false,
+    "note": "No authentication or authorization is enforced in this deployment."
+  },
+  "mcp": {
+    "servers": [
+      "ragger-tools",
+      "package-registry"
+    ],
+    "transport": "HTTP Streamable (stateless)",
+    "mount": "/api/v1/mcp"
+  }
+}
