@@ -32,6 +32,11 @@ class HandoffRecord:
     retry_number: int = 0
     error: str | None = None
     tokens_estimated: bool = False
+    # True for hops that are billable LLM calls (counted in arm totals).
+    # False for worker hops, which only move retrieved text between agents;
+    # their tokens describe payload size and must not be added to totals, as
+    # the same text is already counted as input of the LLM call that uses it.
+    model_call: bool = False
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -55,6 +60,8 @@ class TelemetryCollector:
         self.output_tokens = 0
         self.total_tokens = 0
         self.cost = 0.0
+        # True if any token count in this run is an estimate, not provider-reported.
+        self.tokens_estimated = False
 
         self.passed = False
         self.answer = ""
@@ -75,6 +82,7 @@ class TelemetryCollector:
         retry_number: int = 0,
         error: str | None = None,
         tokens_estimated: bool = False,
+        model_call: bool = False,
     ) -> None:
         hop = HandoffRecord(
             timestamp=datetime.now(timezone.utc).isoformat(),
@@ -90,6 +98,7 @@ class TelemetryCollector:
             retry_number=retry_number,
             error=error,
             tokens_estimated=tokens_estimated,
+            model_call=model_call,
         )
         self.handoffs.append(hop)
 
@@ -112,6 +121,7 @@ class TelemetryCollector:
             "output_tokens": self.output_tokens,
             "total_tokens": self.total_tokens,
             "cost": self.cost,
+            "tokens_estimated": self.tokens_estimated,
             "answer": self.answer,
             "error": self.error,
             "status": self.status,
@@ -159,6 +169,7 @@ class BenchmarkTelemetry:
             "output_tokens": total_output,
             "total_tokens": total_tokens,
             "total_cost": round(total_cost, 6),
+            "tokens_estimated": any(c.tokens_estimated for c in self.cases),
             "cost_per_question": round(total_cost / n, 6) if n else 0.0,
             "cases": [c.to_dict() for c in self.cases],
             "handoffs": [h.to_dict() for h in all_handoffs],

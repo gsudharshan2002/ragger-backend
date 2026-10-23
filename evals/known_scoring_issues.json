@@ -1,0 +1,9 @@
+{
+  "_note": "Cases where the expected-keyword check is known to disagree with a manual read of the answers. Reported in artifacts, never used to change a score or an expected keyword.",
+  "gh-003": {
+    "keyword": "migrat",
+    "issue": "false negative",
+    "evidence": "On 2026-10-23 re-run, both arms answered 'stop reading the top-level rate field and read resources.core instead; rate was removed'. That is the migration advice, but neither answer contains the stem 'migrat'.",
+    "reviewed_by": "manual read of the re-run answers (not a human labeler)"
+  }
+}

@@ -100,6 +100,9 @@ class Settings(BaseSettings):
     EMBEDDING_TIMEOUT: int = 30
     LLM_TIMEOUT: int = 60
     LLM_STREAM_TIMEOUT: int = 120
+    # Ask OpenAI-compatible providers to append a final usage chunk to streams so
+    # token counts are provider-reported instead of estimated.
+    LLM_STREAM_USAGE: bool = True
 
     # CORS
     CORS_ORIGINS: Annotated[list[str], NoDecode] = [

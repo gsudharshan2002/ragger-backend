@@ -11,12 +11,38 @@ Reuses check_deprecation and retrieval services from agent_tools.py.
 """
 
 import asyncio
+import re
 import time
 from typing import Any
 
 from app.services.agent_tools import ApiVersion, check_deprecation, search_knowledge_base
 from app.services.squad.fault_injection import should_inject_fault, InjectedHTTP500Error
 from app.services.squad.telemetry import estimate_tokens
+
+_VERSION_RE = re.compile(r"\b(2022-11-28|2026-03-10)\b")
+
+
+def resolve_api_version(query: str, default: str = ApiVersion.CURRENT.value) -> str:
+    """Pick the API version to check from the question itself.
+
+    An explicit supported version date wins; otherwise the question is about
+    the "current" version. Dates the knowledge base does not index are ignored
+    rather than guessed at.
+    """
+    match = _VERSION_RE.search(query or "")
+    return match.group(1) if match else default
+
+
+def format_chunks(chunks: list) -> str:
+    """Render retrieved chunks as readable, citable evidence (full chunk text)."""
+    lines = []
+    for c in chunks:
+        name = getattr(c, "document_name", None) or (c.get("document", "") if isinstance(c, dict) else "")
+        page = getattr(c, "page", None) if not isinstance(c, dict) else c.get("page", 0)
+        section = getattr(c, "section", None) if not isinstance(c, dict) else c.get("section")
+        text = getattr(c, "content", None) if not isinstance(c, dict) else c.get("content", c.get("excerpt", ""))
+        lines.append(f"[{name} p.{page}{' / ' + section if section else ''}] {text}")
+    return "\n".join(lines)
 
 
 class VersionDeprecationWorker:
@@ -31,7 +57,7 @@ class VersionDeprecationWorker:
         query: str,
         case_id: str,
         endpoint_or_feature: str | None = None,
-        api_version: str = "2026-03-10",
+        api_version: str | None = None,
     ) -> dict[str, Any]:
         """Run the version/deprecation check.
 
@@ -49,6 +75,7 @@ class VersionDeprecationWorker:
 
         # Determine what to check
         feature = endpoint_or_feature or query
+        api_version = api_version or resolve_api_version(query)
 
         # Controlled fault injection: HTTP 500 for the designated case
         if should_inject_fault(case_id, "version_deprecation"):
@@ -103,37 +130,56 @@ class VersionDeprecationWorker:
         chunks = result.get("raw_chunks", [])
         summary = result.get("summary", {})
 
-        evidence = summary.get("chunks", [])
-        if isinstance(evidence, list):
-            evidence_text = " ".join(str(c) for c in evidence)
-        else:
-            evidence_text = str(evidence)
+        # search_knowledge_base reports retrieval failures in-band; surface
+        # them as a failure instead of passing them off as "no evidence".
+        retrieval_error = summary.get("error")
+        if retrieval_error:
+            return self._failure(feature, api_version, f"retrieval failed: {retrieval_error}", start)
 
-        sources = []
-        for c in chunks:
-            sources.append({
-                "document": c.document_name if hasattr(c, "document_name") else c.get("document", ""),
-                "page": c.page if hasattr(c, "page") else c.get("page", 0),
-                "section": c.section if hasattr(c, "section") else c.get("section"),
-            })
+        evidence_text = format_chunks(chunks)
+        sources = [
+            {
+                "document": getattr(c, "document_name", ""),
+                "page": getattr(c, "page", 0),
+                "section": getattr(c, "section", None),
+                "chunk_id": getattr(c, "id", None),
+            }
+            for c in chunks
+        ]
 
         input_tokens = estimate_tokens(feature + " " + api_version)
         output_tokens = estimate_tokens(evidence_text)
         latency_ms = int((time.time() - start) * 1000)
 
-        has_data = bool(chunks) and summary.get("chunk_count", 0) > 0
-        status = "success" if has_data else "error"
-
+        has_data = bool(chunks)
         return {
             "evidence": evidence_text,
             "sources": sources,
+            "api_version": api_version,
             "uncertainty": "none" if has_data else "no_deprecation_info_found",
-            "error": None,
+            "error": None if has_data else "no_deprecation_info_found",
             "input_tokens": input_tokens,
             "output_tokens": output_tokens,
             "total_tokens": input_tokens + output_tokens,
             "latency_ms": latency_ms,
-            "status": status,
+            "status": "success" if has_data else "error",
             "fault_injected": False,
-            "chunk_count": summary.get("chunk_count", 0),
+            "chunk_count": len(chunks),
+        }
+
+    def _failure(self, feature: str, api_version: str, error: str, start: float) -> dict[str, Any]:
+        input_tokens = estimate_tokens(feature + " " + api_version)
+        output_tokens = estimate_tokens(error)
+        return {
+            "evidence": "",
+            "sources": [],
+            "api_version": api_version,
+            "uncertainty": "version_check_failed",
+            "error": error,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "total_tokens": input_tokens + output_tokens,
+            "latency_ms": int((time.time() - start) * 1000),
+            "status": "failure",
+            "fault_injected": False,
         }

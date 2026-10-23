@@ -1,68 +1,24 @@
-# Week 11: Cost Attribution by Stage
+# Cost by stage
 
-Isolated request: the synthetic deprecated-method incident trace
-(`week11-incident-deprecated-assignee-001`), question: "When creating a
-GitHub issue via POST /repos/{owner}/{repo}/issues, which field assigns
-users?". Full trace: `artifacts/week11/trace.json`.
+Trace: `bb46791a-84cf-49de-b752-65ec23b8e15f` (kind `agent`, mode `agent`, prompt v2, model `openai/gpt-oss-20b`)
+Question: When creating a GitHub issue via POST /repos/{owner}/{repo}/issues, which field assigns users instead of the deprecated assignee field?
 
-All dollar values are **estimates** derived from span-level token counts
-multiplied by `settings.COST_PER_TOKEN` (5e-07 per token, flat rate). No
-provider-reported usage metadata is available (no live LLM API key was
-configured during this run), so every figure is labeled estimated, not
-actual provider billing.
+| Stage | Calls | Input tokens | Output tokens | Latency (ms) | Cost (USD) |
+|-------|------:|-------------:|--------------:|-------------:|-----------:|
+| retrieval | 1 | 0 | 0 | 5 | $0.000000 |
+| generation | 3 | 866 | 139 | 275606 | $0.000503 |
+| tools | 0 | 0 | 0 | 0 | $0.000000 |
+| **total** | | **866** | **139** | | **$0.000503** |
 
-## Attribution rule
+- Token source: provider-reported (read from each `llm.generate` span).
+- Price: flat `settings.COST_PER_TOKEN` = 5e-07 USD/token for input and output; this is a configured estimate, not provider billing.
+- Retrieval cost is $0: BM25, local embeddings and the local reranker have no per-request API charge here.
+- Latency per stage is the sum of its spans; stages run sequentially in the agent, so they add up to about the request latency.
+- Request latency (from trace): 275632 ms.
 
-Each billable operation is counted exactly once. Spans are categorized by
-stage:
+## Notes on this trace
 
-- **Retrieval** — vector search and reranker model calls.
-- **Generation** — the LLM answer-generation model call.
-- **Tool executions** — separately billed tool calls that are neither
-  retrieval nor generation. In this trace there are none distinct from the
-  retrieval/generation spans above (vector_search and reranker are counted
-  under retrieval; llm under generation), so this stage is $0.
-
-## Per-stage breakdown (incident trace)
-
-| Stage | Input tokens | Output tokens | Latency | Cost (USD) | Basis |
-|-------|-------------:|--------------:|---------|------------|-------|
-| Retrieval (reranker) | 120 | 40 | 312 ms | $0.000080 | estimated |
-| Retrieval (vector search) | 0 | 0 | 14 ms | $0.000000 | local BM25/embedding, no direct API charge |
-| Generation (LLM) | 940 | 210 | 8420 ms | $0.000575 | estimated |
-| Tool executions (separate) | 0 | 0 | — | $0.000000 | none distinct from retrieval/generation |
-| Response assembly | 0 | 0 | 8 ms | $0.000000 | no model call |
-| **Total** | **1,060** | **250** | **8,754 ms** | **$0.000655** | estimated |
-
-Span-level detail is in `artifacts/week11/trace.json` (`spans` array). Token
-counts and costs come from the span records, which are populated by the
-Week 11 span instrumentation (`app/services/observability.py`).
-
-## Cost improvement: retrieval caching
-
-**Baseline** (no cache, one representative request): **$0.000655** per request
-(estimated).
-
-**Improvement implemented**: `app/services/retrieval_cache.py` caches the
-final retrieved chunks keyed by `(query, strategy, knowledge_base_id)`. On a
-cache hit, the retrieval/re-rerank stages are skipped entirely, avoiding the
-reranker model call.
-
-**Post-improvement** (cache hit, equivalent input): retrieval stage cost drops
-from $0.000080 to $0.000000.
-
-| Metric | Baseline | After (cache hit) | Change |
-|--------|----------|-------------------|--------|
-| Retrieval cost | $0.000080 | $0.000000 | -$0.000080 |
-| Total request cost | $0.000655 | $0.000575 | -$0.000080 |
-| % cost reduction | — | — | **-12.2%** |
-| Latency (retrieval skipped) | 8,754 ms | ~8,442 ms | ~-3.6% |
-
-The cache key includes the knowledge base id and the cached chunks retain
-their source document/version metadata, so cached results cannot silently
-bypass version, document-freshness, or access constraints.
-
-**Limitation**: this is a deterministic estimate computed from the incident
-trace's span data, not a live A/B measurement with repeated requests and an
-API key. Live measurement requires a configured LLM provider key and
-repeated equivalent requests to observe real cache-hit rates.
+- This is a **degraded run**: 2 of its 3 model calls hit the 120 s stream timeout and returned no tokens, so only one call's tokens are counted (`trace_clean_metadata.json`). Per-request cost across the 10 earlier live runs averaged $0.00184 (`tenx.md`).
+- Failed calls are not billed in this estimate because no tokens were reported for them; a provider may bill differently.
+- Cache-hit saving: none measured. The retrieval cost is already $0 (local BM25), so a retrieval cache would save latency but no dollars here; the old "12.2% saving" claim came from a synthetic fixture and is archived in `synthetic_fixture/`.
+- Reproduce: `python scripts/cost_by_stage.py --trace-id <id>`.

@@ -5,6 +5,7 @@ Usage:
   python scripts/trace_search.py --status failed --limit 10
   python scripts/trace_search.py --chunk-id <chunk_id> --min-latency 1000
   python scripts/trace_search.py --prompt-version 1 --error
+  python scripts/trace_search.py --query-contains assignee --answer-contains "could not find"
 
 Filters map to the /api/v1/traces/search endpoint.
 """
@@ -35,6 +36,8 @@ def main() -> int:
     parser.add_argument("--min-cost-usd", type=float)
     parser.add_argument("--started-after")
     parser.add_argument("--started-before")
+    parser.add_argument("--query-contains", help="case-insensitive substring of the question")
+    parser.add_argument("--answer-contains", help="case-insensitive substring of the answer")
     parser.add_argument("--limit", type=int, default=100)
     args = parser.parse_args()
 
@@ -59,6 +62,8 @@ def main() -> int:
             "min_cost_usd": args.min_cost_usd,
             "started_after": args.started_after,
             "started_before": args.started_before,
+            "query_contains": args.query_contains,
+            "answer_contains": args.answer_contains,
         }.items()
         if v is not None
     }

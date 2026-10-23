@@ -4,15 +4,18 @@ Selected case: `gh-006`
 Question: Does the current version of GET /repos/{owner}/{repo} still include a has_downloads field?
 
 ## Fault-Injection Configuration
-- Fault enabled: `True`
-- Worker: `version_deprecation`
-- Fault injected: `True`
-- Response: HTTP 500 (simulated via `InjectedHTTP500Error`)
+- Fault enabled (env `RAGGER_FAULT_INJECTION`/`RAGGER_FAULT_CASE_ID`): `True`
+- Target worker: `version_deprecation` (only this case, only this worker)
+- Fault injected on this run: `True`
+- Mechanism: the worker returns an HTTP 500 error result in-process (there is no network boundary between manager and workers in this build)
 
-## Retry Behavior
-- Retries: not applicable (fault injection is deterministic, not transient)
-- Retry limits respected: N/A (no retry attempted for injected faults)
-- Timeouts respected: N/A
+## Retry Behavior (from the recorded handoffs)
+- Attempts: 3 (1 initial + 2 retries); configured limit: 3 attempts
+- Retry limit respected: `True`
+- Per-attempt timeout 30.0s respected: `True`
+  - attempt 0: status=`failure` latency=0ms error='HTTP 500: version/deprecation check failed for Does the current version of GET /repos/{owner}/{repo} still include a has_downloads field?@2026-03-10'
+  - attempt 1: status=`failure` latency=0ms error='HTTP 500: version/deprecation check failed for Does the current version of GET /repos/{owner}/{repo} still include a has_downloads field?@2026-03-10'
+  - attempt 2: status=`failure` latency=0ms error='HTTP 500: version/deprecation check failed for Does the current version of GET /repos/{owner}/{repo} still include a has_downloads field?@2026-03-10'
 
 ## Actual HTTP 500 Response
 ```json
@@ -25,35 +28,28 @@ Question: Does the current version of GET /repos/{owner}/{repo} still include a 
 
 ## Actual Orchestrator Response
 ```
-I’m sorry, but the provided evidence does not contain information about whether the current version of `GET /repos/{owner}/{repo}` includes a `has_downloads` field.
+I could not find that information in the provided documents.
 
-Note: version/deprecation verification was unavailable for this question.
+Note: version/deprecation evidence was unavailable (HTTP 500: version/deprecation check failed for Does the current version of GET /repos/{owner}/{repo} still include a has_downloads field?@2026-03-10); any version-specific statement above is unverified.
 ```
 
-## Graceful Degradation
-- Complete answer: `yes`
-- Missing version verification disclosed: `yes`
-- Unsupported version claims/hallucinated code: `no`
+## Outcome
+- Final task state: **completed: could not answer from evidence**
+- Version verification state: `unavailable`
+- Missing verification disclosed to the user: `True`
+- Affirmative version/deprecation claims in the answer body: `none`
+- Code sample presented as version-verified: `False`
+- Graceful degradation: `True`
+- Error details: `None`
 
 ## Execution Trace References
-- Total latency: 3663ms
-- Input tokens: 122 (estimated)
-- Output tokens: 45 (estimated)
-- Total tokens: 167 (estimated)
-- Handoffs: 3
+- Total latency: 73188ms
+- Model-call tokens: 404 in / 122 out / 526 total
+- Handoffs recorded: 5 (see `handoffs.log`)
 
-## Version/Deprecation Worker Result
-- Status: `failure`
-- Evidence: `False`
-- Error: `HTTP 500: version/deprecation check failed for Does the current version of GET /repos/{owner}/{repo} still include a has_downloads field?@2026-03-10`
+## Worker Results
+- version_deprecation: status=`failure` evidence=`False` attempts=`3`
+- code_sample: status=`None` evidence=`False` attempts=`None`
 
-## Code-Sample Worker Result
-- Status: `None`
-- Evidence: `False`
-
-## Final Conclusion
-- Graceful degradation: `yes`
-- No unsupported claims: `yes`
-
-The orchestrator gracefully degraded and disclosed the missing verification the version/deprecation failure.
-No hallucinated version-specific claims were detected.
+## Conclusion
+The orchestrator retried within its limits, did not present unverified version claims as verified, and told the user verification was unavailable.

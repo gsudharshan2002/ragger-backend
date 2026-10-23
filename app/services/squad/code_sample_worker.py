@@ -16,6 +16,7 @@ from typing import Any
 
 from app.services.agent_tools import search_knowledge_base
 from app.services.squad.telemetry import estimate_tokens
+from app.services.squad.version_worker import format_chunks
 
 
 class CodeSampleWorker:
@@ -84,8 +85,24 @@ class CodeSampleWorker:
         chunks = result.get("raw_chunks", [])
         summary = result.get("summary", {})
 
-        evidence_chunks = summary.get("chunks", [])
-        evidence_text = " ".join(str(c) for c in evidence_chunks) if isinstance(evidence_chunks, list) else str(evidence_chunks)
+        # search_knowledge_base reports retrieval failures in-band; do not
+        # pass them off as "no documentation found".
+        if summary.get("error"):
+            err = f"retrieval failed: {summary['error']}"
+            return {
+                "evidence": "",
+                "code_samples": [],
+                "sources": [],
+                "unsupported_assumptions": [err],
+                "input_tokens": input_tokens,
+                "output_tokens": estimate_tokens(err),
+                "total_tokens": input_tokens + estimate_tokens(err),
+                "latency_ms": int((time.time() - start) * 1000),
+                "status": "failure",
+                "error": err,
+            }
+
+        evidence_text = format_chunks(chunks)
         output_tokens = estimate_tokens(evidence_text)
 
         sources = []
@@ -102,6 +119,7 @@ class CodeSampleWorker:
                 "document": doc_name,
                 "page": page,
                 "section": section,
+                "chunk_id": getattr(c, "id", None),
             })
 
             # Heuristic: flag code-looking chunks as code samples, but only
@@ -132,6 +150,7 @@ class CodeSampleWorker:
         status = "success" if chunks else "error"
 
         return {
+            "error": None if chunks else "no_documentation_found_for_query",
             "evidence": evidence_text,
             "code_samples": code_samples,
             "sources": sources,

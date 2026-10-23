@@ -1,72 +1,53 @@
-# Week 11: 10x Scaling Analysis
+# Week 11: 10x scaling analysis (from real traces)
 
-Basis: actual trace data in `app/data/traces.jsonl` (985 completed traces)
-plus the synthetic incident trace for full span-level cost/token detail
-(`artifacts/week11/trace.json`). All per-request cost/token figures are
-estimates derived from span token counts x `settings.COST_PER_TOKEN`; no
-provider-reported usage metadata is available.
+Basis: the 10 real agent requests in `live_regression.json` (live model `openai/gpt-oss-20b` via NVIDIA, BM25, run
+one at a time on 2026-10-23), read back from their stored traces. The old analysis used a synthetic fixture and the
+historical trace file, which mostly predates token tracking; it is archived in `synthetic_fixture/tenx.md`.
 
-## Current measured baseline (from stored traces)
+## Measured baseline (n = 10 requests, 40 model calls)
 
 | Metric | Value |
-|--------|-------|
-| Traces stored | 985 |
-| Completed | 857 |
-| Failed | 43 |
-| Latency p50 | 3,361 ms |
-| Latency p99 | 461,947 ms (outlier-skewed; several long-running/hung requests) |
-| Representative per-request cost | $0.000655 (estimated, incident trace) |
-| Representative per-request tokens | 1,310 max / ~5 avg (most historical traces predate token tracking) |
+|---|---|
+| Request latency | p50 157 s, mean 182 s, max 316 s (with n = 10, p99 is just the max) |
+| Model calls per request | 4.0 on average (5 at most); retrievals per request 2.0 |
+| Tokens per request | 3,115 input + 571 output (provider-reported counts) |
+| Cost per request | mean $0.00184 (range $0.00105 to $0.00295), at the flat configured rate of 5e-07 USD/token |
+| Single model-call latency | p50 19.5 s, p90 120 s |
+| Model-call failures | **8 of 40 calls (20%) hit the 120 s stream timeout** |
 
-Historical traces were recorded before Week 11 cost/token instrumentation, so
-most carry $0 / 0 tokens. The incident trace is the only request with
-complete per-span cost data and is used as the representative request.
+Cost is the flat `COST_PER_TOKEN` estimate, not provider billing. Retrieval is local BM25: $0 per request.
 
-## Expected 10x workload
+## 10x workload
 
-- Request volume: ~9,850 equivalent requests (10 x 985).
-- LLM generation calls: ~10x (one per RAG request).
-- Retrieval reranker calls: ~10x (unless cache hit).
-- Aggregate estimated cost: ~$0.00655 for the same mix (still small in
-  absolute dollars, but 10x the provider RPM/token consumption).
+Current measured workload = 1 request at a time. 10x = 10 requests in flight.
 
-## First bottleneck: API rate limits (LLM provider)
+- Model calls in flight: about 10 (40 per 10 requests).
+- Provider throughput needed at the observed 157 s per request: 10 / 157 s = 0.064 requests/s, or 0.25 model calls/s (15 per minute).
+- Cost for 10 simultaneous requests: about $0.018 per batch. Not a constraint.
 
-The component most likely to saturate first under 10x load is the **LLM
-provider's rate limit (requests-per-minute / concurrent-requests / TPM)**,
-not raw cost and not p99 latency alone.
+## Realistic 9,000-developer model (assumptions, not measurements)
 
-Numeric evidence supporting this conclusion:
+Assume 20% of 9,000 developers are active on a given day, 10 questions each, over an 8-hour day, and a 5x burst:
 
-- Per-request cost is negligible ($0.000655 estimated). Even at 10x volume
-  (~$0.00655 per batch of 985), cost would not be the binding constraint
-  unless volume grows to hundreds of thousands of requests.
-- Latency p50 (3,361 ms) is moderate; p99 is inflated by a few outliers
-  (hung/slow requests), which indicates a reliability/timeout issue rather
-  than a throughput ceiling under normal load.
-- Every RAG request makes at least one LLM generation call plus potentially
-  an embedding/reranker call. Under 10x concurrent load, the LLM provider's
-  requests-per-minute and concurrent-connection caps are reached well before
-  cost or per-request latency become dominant.
+| | Average | Burst (5x) |
+|---|---:|---:|
+| Requests / second | 0.63 | 3.1 |
+| Requests in flight (rate x 157 s, Little's law) | about 98 | about 490 |
+| Model calls / minute (4.0 per request) | about 150 | about 750 |
+| Cost / day at $0.00184 per request | about $33 | n/a |
 
-Assumptions: request mix stays similar (mostly RAG, similar token counts);
-no major increase in per-request token volume; provider rate limits are the
-dominant external ceiling.
+## First bottleneck: p99 latency and provider throughput, not cost
 
-## Practical mitigation
+- Cost: about $33/day under these assumptions. Not the first limit.
+- Latency: the single-call timeout rate is already 20% at **one** concurrent request. A request needs about 4 sequential model calls, so a timeout in any one stalls the request (p50 157 s, max 316 s). This breaks an IDE use case long before any budget does.
+- Rate limits: at 10x the load is about 15 calls/minute and at the 9,000-developer burst about 750 calls/minute. **The provider's actual request limit was not measured or verified here**, so I cannot say at what load a 429 appears. The leading risk is that the free-tier endpoint cannot sustain the burst; this is an assumption to confirm with the provider's published limits.
 
-1. **Retrieval caching** (implemented, `app/services/retrieval_cache.py`):
-   cache-hit requests skip the reranker + embedding calls, cutting provider
-   token/RPM consumption by up to ~12% per cached request (measured:
-   $0.000080 saved per request).
-2. **Rate-limit-aware backoff**: `app/core/retry.py` already retries on HTTP
-   429 honoring `Retry-After`; keep and tune `max_retries`/`base_delay`.
-3. **Request queuing / concurrency cap** at the gateway so bursts don't
-   overwhelm the provider; return 429 with a sensible retry-after rather
-   than failing open.
-4. **Route simple/short questions to a cheaper, faster model** where the
-   deployment supports multiple models.
+## Mitigations (not yet implemented unless stated)
 
-If evidence later shows cost or p99 latency dominates instead, revisit; this
-assessment is based on the measured baseline above, not an uncontrolled
-10x production load test (which was deliberately not executed).
+1. Lower the stream timeout and retry once with backoff (today a 120 s timeout silently becomes an empty reasoning step).
+2. Cache retrieval and final answers keyed by (question, KB version, prompt version).
+3. Cut calls per request: the live traces repeat the same retrieval 2 to 3 times with different wording and the same chunks (e.g. 467, 1121, 5463).
+4. Concurrency cap plus queue in front of the provider, returning 429 with Retry-After when full.
+5. Route simple questions to a smaller or faster model; use a paid tier with published limits.
+
+Not done: no load test was run (an uncontrolled 10x test was out of scope), and no canary.

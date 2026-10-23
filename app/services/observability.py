@@ -13,12 +13,13 @@ sanitized reference (the query string itself, which is the user-facing
 search text, not credentials).
 """
 
+import re
 import uuid
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field, asdict
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import datetime, timedelta, timezone
+from typing import Any, Optional
 
 from app.core.config import settings
 
@@ -115,6 +116,8 @@ class TraceContext:
     total_cost_usd: float = 0.0
     cache_hit: Optional[bool] = None
     started_at: str = field(default_factory=now_iso)
+    # Span that top-level spans of this request hang under (e.g. the agent run).
+    root_span_id: Optional[str] = None
 
     def add_span(self, span: Span) -> None:
         self.spans.append(span)
@@ -242,3 +245,86 @@ def span_ctx(
     else:
         span.finish(status="success")
 
+
+
+# --- Redaction ---------------------------------------------------------------
+# Credential-looking keys only. Plain "token" is deliberately not matched on its own:
+# it would also hide token-COUNT fields such as max_tokens / tokens_estimated.
+_SENSITIVE_KEY = re.compile(
+    r"(api[_-]?key|authorization|(access|refresh|id|auth|session|bearer|csrf)[_-]?token|^token$|secret|password|passwd|credential|cookie)",
+    re.I,
+)
+_SENSITIVE_VALUE = re.compile(r"(Bearer\s+[A-Za-z0-9._\-]+|sk-[A-Za-z0-9_\-]{8,}|nvapi-[A-Za-z0-9_\-]{8,}|gsk_[A-Za-z0-9_\-]{8,})")
+
+
+def redact(value: Any, _depth: int = 0) -> Any:
+    """Return a copy of `value` safe to write to logs/traces: values under
+    credential-looking keys are replaced, and bearer tokens / API-key shaped
+    strings inside any string are masked."""
+    if _depth > 6:
+        return "[truncated]"
+    if isinstance(value, dict):
+        return {
+            k: ("[REDACTED]" if _SENSITIVE_KEY.search(str(k)) else redact(v, _depth + 1))
+            for k, v in value.items()
+        }
+    if isinstance(value, (list, tuple)):
+        return [redact(v, _depth + 1) for v in value]
+    if isinstance(value, str):
+        return _SENSITIVE_VALUE.sub("[REDACTED]", value)
+    return value
+
+
+def record_span(
+    stage: str,
+    duration_ms: int,
+    status: str = "success",
+    *,
+    parent_span_id: Optional[str] = None,
+    tool_name: Optional[str] = None,
+    tool_outcome: Optional[str] = None,
+    context_ids: Optional[list] = None,
+    input_tokens: int = 0,
+    output_tokens: int = 0,
+    error: Optional[str] = None,
+    retry_count: int = 0,
+    metadata: Optional[dict] = None,
+) -> Optional[Span]:
+    """Record an already-finished operation as a span on the active trace.
+
+    For code paths where wrapping the operation in a context manager is
+    awkward (generators, existing timing variables). The span is back-dated
+    by `duration_ms`. No-op (returns None) when no trace is active, so
+    instrumentation can never break a request.
+    """
+    ctx = get_active_trace()
+    if ctx is None:
+        return None
+    try:
+        end = datetime.now(timezone.utc)
+        span = Span(
+            span_id=new_id(),
+            trace_id=ctx.trace_id,
+            parent_span_id=parent_span_id if parent_span_id is not None else ctx.root_span_id,
+            stage=stage,
+            start_time=(end - timedelta(milliseconds=duration_ms)).isoformat(),
+            end_time=end.isoformat(),
+            duration_ms=int(duration_ms),
+            status=status,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            cost_usd=estimate_cost_usd(input_tokens, output_tokens) if (input_tokens or output_tokens) else 0.0,
+            context_ids=[str(i) for i in (context_ids or [])],
+            tool_name=tool_name,
+            tool_outcome=tool_outcome,
+            retry_count=retry_count,
+            error=(redact(error)[:300] if error else None),
+            metadata=redact(metadata or {}),
+        )
+        ctx.add_span(span)
+        ctx.input_tokens += span.input_tokens
+        ctx.output_tokens += span.output_tokens
+        ctx.total_cost_usd += span.cost_usd
+        return span
+    except Exception:  # observability must never break the request
+        return None

@@ -1,0 +1,124 @@
+{
+  "case_id": "gh-deprecated-001",
+  "question": "When creating a GitHub issue via POST /repos/{owner}/{repo}/issues, which field assigns users instead of the deprecated assignee field?",
+  "n_per_arm": 5,
+  "strategy": "bm25",
+  "arms": {
+    "v1_baseline": {
+      "prompt_version": "1",
+      "correct": 4,
+      "recommends_singular": 0,
+      "n": 5,
+      "runs": [
+        {
+          "trace_id": "902e6884-295f-4a0f-83ab-033467b0df40",
+          "answer": "Use the **`assignees`** array field to assign users when creating an issue. The singular `assignee` field has been removed and is no longer supported. [2]",
+          "input_tokens": 4941,
+          "output_tokens": 955,
+          "latency_ms": 91684,
+          "has_assignees": true,
+          "recommends_singular": false,
+          "correct": true
+        },
+        {
+          "trace_id": "8012788c-ffa7-4ab5-875c-7f166871915e",
+          "answer": "Use the **`assignees`** array field to assign users when creating an issue. This replaces the deprecated singular `assignee` field.\u30102\u3011",
+          "input_tokens": 1928,
+          "output_tokens": 338,
+          "latency_ms": 172004,
+          "has_assignees": true,
+          "recommends_singular": false,
+          "correct": true
+        },
+        {
+          "trace_id": "c25a04e0-c4c1-49f0-9e57-37f3e54f3722",
+          "answer": "I could not find that information in the provided documents.",
+          "input_tokens": 4989,
+          "output_tokens": 850,
+          "latency_ms": 147361,
+          "has_assignees": false,
+          "recommends_singular": false,
+          "correct": false
+        },
+        {
+          "trace_id": "62cf44b6-5e9a-4670-9e30-3a0cedc5e22d",
+          "answer": "Use the **`assignees`** array field to assign users when creating an issue. The singular `assignee` field has been removed. [2]",
+          "input_tokens": 3058,
+          "output_tokens": 479,
+          "latency_ms": 264581,
+          "has_assignees": true,
+          "recommends_singular": false,
+          "correct": true
+        },
+        {
+          "trace_id": "fdfe2356-c46c-497b-80e5-067f6e60a173",
+          "answer": "Use the **`assignees` array** field to assign users when creating an issue. This replaces the deprecated singular `assignee` field. [2]",
+          "input_tokens": 3036,
+          "output_tokens": 609,
+          "latency_ms": 157190,
+          "has_assignees": true,
+          "recommends_singular": false,
+          "correct": true
+        }
+      ]
+    },
+    "v2_fixed": {
+      "prompt_version": "2",
+      "correct": 3,
+      "recommends_singular": 0,
+      "n": 5,
+      "runs": [
+        {
+          "trace_id": "f124202f-dcc0-4b5d-a8ad-7a3832a3814b",
+          "answer": "Use the **`assignees`** array field to assign users when creating an issue. This replaces the deprecated singular `assignee` field. [2]",
+          "input_tokens": 1928,
+          "output_tokens": 339,
+          "latency_ms": 132472,
+          "has_assignees": true,
+          "recommends_singular": false,
+          "correct": true
+        },
+        {
+          "trace_id": "e3892bc8-774d-410a-bdb0-32acfd6790dd",
+          "answer": "I could not find that information in the provided documents.",
+          "input_tokens": 4908,
+          "output_tokens": 873,
+          "latency_ms": 315610,
+          "has_assignees": false,
+          "recommends_singular": false,
+          "correct": false
+        },
+        {
+          "trace_id": "76907b32-16d0-4326-bab9-c291591f6623",
+          "answer": "I could not find that information in the provided documents.",
+          "input_tokens": 2728,
+          "output_tokens": 541,
+          "latency_ms": 210408,
+          "has_assignees": false,
+          "recommends_singular": false,
+          "correct": false
+        },
+        {
+          "trace_id": "abb33bea-261f-4786-8ada-e738f245a3e8",
+          "answer": "Use the **`assignees`** array field to assign users when creating an issue. This replaces the deprecated singular `assignee` field. [2]",
+          "input_tokens": 1928,
+          "output_tokens": 322,
+          "latency_ms": 155223,
+          "has_assignees": true,
+          "recommends_singular": false,
+          "correct": true
+        },
+        {
+          "trace_id": "bff83e73-047c-4a37-bc21-b522648f2692",
+          "answer": "Use the **`assignees`** array field to assign users when creating an issue. This replaces the deprecated singular `assignee` field. [2]",
+          "input_tokens": 1704,
+          "output_tokens": 399,
+          "latency_ms": 172056,
+          "has_assignees": true,
+          "recommends_singular": false,
+          "correct": true
+        }
+      ]
+    }
+  }
+}

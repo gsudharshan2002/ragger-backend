@@ -9,8 +9,9 @@ Usage:
   # Normal benchmark (no fault injection)
   uv run python scripts/run_week10_experiment.py
 
-  # With fault injection enabled (HTTP 500 into version worker for gh-006)
-  RAGGER_FAULT_INJECTION=1 RAGGER_FAULT_CASE_ID=gh-006 uv run python scripts/run_week10_experiment.py
+  # Choose which case gets the HTTP 500 in the failure experiment (default gh-006).
+  # The benchmark itself always runs with faults disabled.
+  RAGGER_FAULT_CASE_ID=gh-007 uv run python scripts/run_week10_experiment.py
 """
 
 import asyncio
@@ -22,6 +23,9 @@ from app.services.squad.fault_experiment import run_failure_experiment
 
 
 async def main():
+    # The benchmark must never run with fault injection on, even if the caller's
+    # shell has it set; the failure experiment enables it itself, scoped.
+    os.environ.pop("RAGGER_FAULT_INJECTION", None)
     print("=== Week 10 Multi-Agent Squad Experiment ===")
     print()
 
@@ -35,13 +39,13 @@ async def main():
     print(f"Squad:        pass={squad['pass_rate']*100:.1f}% p50={squad['p50_latency_ms']}ms tokens={squad['total_tokens']}")
     print()
 
-    # Phase 3: Run fault injection experiment
-    fault_enabled = os.environ.get("RAGGER_FAULT_INJECTION", "0") == "1"
+    # Phase 3: Run the isolated HTTP 500 experiment. Injection is enabled only
+    # for this one scoped run (the benchmark above ran with faults disabled).
     case_id = os.environ.get("RAGGER_FAULT_CASE_ID", "gh-006")
-    print(f"--- Running HTTP 500 fault experiment (enabled={fault_enabled}, case={case_id}) ---")
+    print(f"--- Running HTTP 500 fault experiment (case={case_id}) ---")
     trace = await run_failure_experiment(case_id)
     print(f"Fault injected: {trace['fault_injected']}")
-    print(f"Orchestrator disclosed missing verification: {'version/deprecation verification was unavailable' in trace['orchestrator_answer']}")
+    print(f"Version verification state: {trace['version_verification']}")
     print()
 
     print("=== Artifacts written to artifacts/week10/ ===")

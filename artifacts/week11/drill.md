@@ -1,101 +1,52 @@
-# Week 11: Support Drill — Developer Documentation Track
+# Week 11: Support drill, regression result and deployment plan
 
-## Scenario
+**Everything below comes from real runs on 2026-10-23** (live model `openai/gpt-oss-20b` via NVIDIA, BM25 retrieval,
+real knowledge base: `current-version.md`, `old-version.md`, Apple Combine PDF, Swagger PDFs). The earlier
+synthetic-fixture version of these files is preserved in `synthetic_fixture/` and is **not** used here.
+This is a developer-run experiment, not a customer incident, and no human has verified the drill yet.
 
-Find the code sample that used a deprecated method.
+## 1. The incident (real, reproduced live)
 
-## Incident (synthetic fixture — explicitly labeled)
+- Question (case `gh-deprecated-001`): *"When creating a GitHub issue via POST /repos/{owner}/{repo}/issues, which field assigns users instead of the deprecated assignee field?"*
+- Bad answer: **"I could not find that information in the provided documents."**
+- Trace: `c25a04e0-c4c1-49f0-9e57-37f3e54f3722` (prompt v1, 147 s, 5 model calls, 3 retrievals). Full trace: `trace.json`.
 
-This is a **synthetic, developer-constructed incident fixture**, NOT an actual
-customer incident. It was created to exercise the trace lookup and debugging
-workflow and is labeled `synthetic: true` in the trace record.
+## 2. Search (measured)
 
-- Target incident identifier: `week11-incident-deprecated-assignee-001`
-- Case: `gh-deprecated-001`
-- Incident type: `deprecated_method`
-- Question: "When creating a GitHub issue via POST /repos/{owner}/{repo}/issues,
-  which field assigns users?"
-- Bad answer: "Use the `assignee` field (string) to assign a user when creating
-  an issue via POST /repos/{owner}/{repo}/issues."
-- Correct replacement: `assignees` (array of strings). `assignee` is deprecated.
-- Deprecated method: `assignee`
-- Trace file: `artifacts/week11/trace.json` (complete exported trace)
+| | Filters | Candidates returned | Wall time (CLI) |
+|---|---|---:|---:|
+| Old fields only | `--prompt-version 1 --mode agent` | 5 traces to open and read | 0.53 s |
+| New text filter | `--query-contains assignee --answer-contains "could not find" --prompt-version 1` | **1 trace (the bad answer)** | 0.47 s |
 
-## Timed incident search
+Command: `python scripts/trace_search.py --query-contains assignee --answer-contains "could not find" --prompt-version 1`
 
-| Field | Value |
-|-------|-------|
-| Search start | 2026-10-16T09:05:16.423801+00:00 |
-| Search finish | 2026-10-16T09:05:16.578+00:00 |
-| Elapsed time | 00:00 (mm:ss) — ~0.15s measured |
-| Five-minute target met | Yes (well under 5 minutes) |
+- **What was missing before:** the search could not filter on the question or answer text, so "find the bad answer" meant opening every candidate. Added `query_contains` / `answer_contains` (storage, `GET /api/v1/traces/search`, CLI) with tests.
+- **What else was missing:** agent runs saved no `id`, `timestamp`, `status`, `llm`, `cost_usd` or spans, so they could not be found by trace id at all. Fixed; every agent and squad run is now one stored trace (`tests/test_agent_tracing.py`).
+- Wall time includes Python start-up; the lookup itself is a scan of about 1,030 JSONL records. Elapsed time is under 1 s, far inside the 5-minute target. **Human-run timed drill: pending.** A teammate should run the command above and confirm the returned trace's answer is the refusal.
 
-## Exact search method / log slice
+## 3. Root cause (from the trace)
 
-Used the implemented trace search mechanism
-(`app/services.storage.search_traces`, exposed via `GET /api/v1/traces/search`
-and `scripts/trace_search.py`).
+- Retrieval worked: the same chunks (467, 1121, 5463, 2612) were retrieved in the failing and the passing run.
+- Docs mismatch: `current-version.md` documents `assignees` under **GET** issue ("read and write assignees exclusively through the `assignees` array"). The question asks about **POST** create. The evidence is only partly on point.
+- The answer step is non-deterministic: same context, sometimes a correct answer and sometimes the refusal.
+- **The expected failure (recommending the deprecated field) did not occur.**
 
-Filter applied:
-- `trace_id = week11-incident-deprecated-assignee-001`
+## 4. RED → GREEN, honestly (`live_regression.json`, `live_regression.log`)
 
-The trace was located immediately by its unique trace ID. Alternative
-successful lookups that also return the incident:
-- `chunk_id = 4704` (the retrieved chunk containing the deprecated `assignee`
-  reference) — returns the incident plus other traces referencing that chunk.
-- `prompt_version = 1` (returns many traces; incident among them).
-- `error = false` + status `completed` (broad).
+Live runs of the real agent, prompt v1 (no deprecation guard) vs v2 (guard added), n = 5 each:
 
-## Fields that enabled the lookup
+| | Correct | Recommended deprecated `assignee` | Refused ("could not find") |
+|---|---:|---:|---:|
+| v1 baseline | 4 / 5 | 0 | 1 |
+| v2 (with guard) | 3 / 5 | 0 | 2 |
 
-- `trace_id` (unique, primary key) — instant lookup.
-- `chunk_id` within `sources[*].chunk_id` — content-based lookup.
-- `prompt_version` — version-based filtering.
-- `status` / `error` — outcome-based filtering.
+- The prompt-v2 change is **not shown to help**: the live model never recommended the deprecated field under v1, so there was no live RED to fix. The 4/5 vs 3/5 gap is within noise at n = 5.
+- `tests/test_week11_regression.py` is a **deterministic prompt-presence check** (does the prompt contain the guard, does the context hold the replacement). It passes, but it does not prove the model behaves better.
+- Fix applied for a failure that *was* observed live (trace `e3892bc8…`, `trace_wasted_vector_step.json`): the agent chose the `vector` strategy, which returns nothing when no embedding provider works, wasting a step. Pure `vector` now falls back to BM25 when vector search is unavailable (`tests/test_agent_tracing.py`). Its effect on the live numbers is not measured.
 
-## Root-cause evidence
+## 5. Deployment and rollback plan
 
-Inspecting the complete trace (`artifacts/week11/trace.json`):
-
-1. **Retrieval** surfaced chunk `4704` (old-version 2022-11-28 documentation)
-   describing the deprecated `assignee` field, plus chunk `5262` noting the
-   prior version "only accepted a single assignee (string)".
-2. **Prompt version 1** had no instruction prohibiting deprecated-method
-   recommendations.
-3. **Model generation** (span `model.generation`, 8,420 ms) produced an answer
-   recommending `assignee` as the current implementation instead of the
-   `assignees` replacement.
-4. **Root cause**: outdated retrieval surfaced pre-deprecation documentation
-   and the prompt (v1) lacked a deprecation-guard rule, so the model recommended
-   the deprecated method as the current implementation.
-
-## Result
-
-The bad answer was located and confirmed via the implemented search mechanism
-in ~0.15s, meeting the five-minute target. The incident is recorded as
-synthetic (not an actual customer incident).
-
-## Human verification status
-
-Pending. A human squadmate should verify the fixture and the search procedure
-by running:
-
-```
-python scripts/trace_search.py --trace-id week11-incident-deprecated-assignee-001
-```
-
-and confirming the returned trace's `answer` recommends the deprecated
-`assignee` field and its `deprecated_method`/`correct_replacement` fields match.
-
-## Deployment and rollback plan (two-line)
-
-Canary: deploy prompt v2 (deprecation guard) to a small traffic percentage and
-compare the deprecated-method error rate, correctness, latency, and cost
-against the v1 baseline before broader rollout.
-Rollback: if regression thresholds are breached, revert `SYSTEM_PROMPT` and
-`PROMPT_VERSION` to v1 while preserving all traces for investigation.
-
-Regression thresholds (to be set once baseline measurements are stable):
-- Deprecated-method recommendation rate must not increase.
-- Correctness (expected-keyword pass rate) must not decrease by >2 points.
-- p95 latency and cost per request must not increase by >10%.
+- **Canary:** serve prompt v2 to a small traffic share and compare against v1 on refusal rate, deprecated-field recommendation rate, correctness, p99 latency and cost per request.
+- **Rollback:** if any threshold below is breached, set `SYSTEM_PROMPT`/`PROMPT_VERSION` back to v1 and keep all traces.
+- Thresholds (baseline is small, n = 5, so treat as provisional): refusal rate must not exceed baseline by more than 20 points; deprecated-field recommendations must stay at 0; cost and p99 must not rise more than 10%.
+- No canary has been run.

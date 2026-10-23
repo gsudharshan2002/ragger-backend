@@ -217,6 +217,16 @@ class RagEngine:
             config = await get_default_rag_config(RagStrategy.HYBRID_RRF)
         config.strategy = resolved_strategy
 
+        # A pure vector search with no working embedding provider can only return
+        # nothing; serve it with BM25 instead of silently giving the agent an empty
+        # observation (seen in a live trace: a wasted step plus a provider timeout).
+        if config.strategy == RagStrategy.VECTOR:
+            from app.core.capabilities import detect_capabilities
+
+            if not detect_capabilities()["vector_search_available"]:
+                logger.warning("Vector search unavailable; serving 'vector' retrieval with BM25")
+                config.strategy = RagStrategy.BM25
+
         if knowledge_base_id:
             all_docs = await get_all_documents()
             kb_doc_ids = {
@@ -263,9 +273,15 @@ class RagEngine:
 
         if should_run_reranker(config.strategy, config) and fused_results:
             rerank_chunks = [r.chunk for r in fused_results[: config.reranker.candidate_count]]
-            rerank_results = await rerank_documents(
-                query, rerank_chunks, config.reranker.model, config.reranker.candidate_count, config.reranker.top_n
-            )
+            try:
+                rerank_results = await rerank_documents(
+                    query, rerank_chunks, config.reranker.model, config.reranker.candidate_count, config.reranker.top_n
+                )
+            except Exception as e:
+                # Degrade to the fused (RRF) ranking instead of returning no
+                # context at all - _build_final_context falls back to it.
+                logger.warning(f"Agent retrieve: reranker failed, using fused ranking: {e}")
+                rerank_results = []
 
         if should_run_mmr(config.strategy, config) and rerank_results:
             mmr_results = mmr_selection(
@@ -839,13 +855,19 @@ async def execute_rag(
             ]
         ]
 
-        rerank_results = await rerank_documents(
-            query,
-            rerank_chunks,
-            config.reranker.model,
-            config.reranker.candidate_count,
-            config.reranker.top_n,
-        )
+        rerank_error: Optional[str] = None
+        try:
+            rerank_results = await rerank_documents(
+                query,
+                rerank_chunks,
+                config.reranker.model,
+                config.reranker.candidate_count,
+                config.reranker.top_n,
+            )
+        except Exception as e:
+            logger.warning(f"Reranker failed, using fused ranking: {e}")
+            rerank_results = []
+            rerank_error = str(e)[:200]
 
         for r in rerank_results:
             yield emit(
@@ -867,7 +889,10 @@ async def execute_rag(
                 ),
             },
         )
-        rerank_span.finish(status="success")
+        if rerank_error:
+            rerank_span.finish(status="error", error=rerank_error)
+        else:
+            rerank_span.finish(status="success")
 
     # ---------------------------------------------------------
     # MMR

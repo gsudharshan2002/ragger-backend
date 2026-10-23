@@ -25,6 +25,8 @@ async def search_traces_endpoint(
     min_cost_usd: float | None = Query(default=None),
     started_after: str | None = Query(default=None),
     started_before: str | None = Query(default=None),
+    query_contains: str | None = Query(default=None),
+    answer_contains: str | None = Query(default=None),
     limit: int = Query(default=100),
 ) -> dict:
     filters = {
@@ -42,6 +44,8 @@ async def search_traces_endpoint(
             "min_cost_usd": min_cost_usd,
             "started_after": started_after,
             "started_before": started_before,
+            "query_contains": query_contains,
+            "answer_contains": answer_contains,
         }.items()
         if v is not None
     }

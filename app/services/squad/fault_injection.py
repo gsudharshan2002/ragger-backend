@@ -10,20 +10,25 @@ or experiment flag.
 """
 
 import os
-from typing import Optional
+from contextlib import contextmanager
+from typing import Iterator
 
-# Environment variable to enable fault injection for the experiment.
-# Format: "gh-006" (case ID) - only that case gets the 500 from the version worker.
-FAULT_INJECTION_CASE_ID = os.environ.get("RAGGER_FAULT_CASE_ID", "")
+# Fault injection is read from the environment at call time (not import time) so
+# an experiment can enable it for exactly one scoped run and the benchmark that
+# runs before/after it is never affected.
+#   RAGGER_FAULT_INJECTION=1   enable (default "0" = disabled)
+#   RAGGER_FAULT_CASE_ID=gh-006  the single case whose version worker gets the 500
+ENV_ENABLED = "RAGGER_FAULT_INJECTION"
+ENV_CASE_ID = "RAGGER_FAULT_CASE_ID"
 
-# When set to "1", the version/deprecation worker raises an HTTP 500 for the
-# designated case. Default "0" means fault injection is disabled.
-FAULT_INJECTION_ENABLED = os.environ.get("RAGGER_FAULT_INJECTION", "0") == "1"
+
+def fault_case_id() -> str:
+    return os.environ.get(ENV_CASE_ID, "")
 
 
 def is_fault_enabled() -> bool:
     """Return True if controlled fault injection is active."""
-    return FAULT_INJECTION_ENABLED and bool(FAULT_INJECTION_CASE_ID)
+    return os.environ.get(ENV_ENABLED, "0") == "1" and bool(fault_case_id())
 
 
 def should_inject_fault(case_id: str, worker_name: str = "version_deprecation") -> bool:
@@ -37,7 +42,23 @@ def should_inject_fault(case_id: str, worker_name: str = "version_deprecation") 
         return False
     if worker_name != "version_deprecation":
         return False
-    return case_id == FAULT_INJECTION_CASE_ID
+    return case_id == fault_case_id()
+
+
+@contextmanager
+def inject_fault_for(case_id: str) -> Iterator[None]:
+    """Enable the HTTP 500 for `case_id` only inside this block."""
+    previous = {k: os.environ.get(k) for k in (ENV_ENABLED, ENV_CASE_ID)}
+    os.environ[ENV_ENABLED] = "1"
+    os.environ[ENV_CASE_ID] = case_id
+    try:
+        yield
+    finally:
+        for k, v in previous.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
 
 
 class InjectedHTTP500Error(Exception):

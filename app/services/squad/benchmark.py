@@ -19,7 +19,8 @@ import time
 from pathlib import Path
 
 from app.core.config import settings
-from app.services.evaluation.race_harness import _percentile, _passed
+from app.services.evaluation.scoring import passed_strict
+from app.services.llm import track_usage
 from app.services.squad.eval_cases import load_selected_cases
 from app.services.squad.telemetry import (
     TelemetryCollector,
@@ -35,7 +36,13 @@ RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 async def run_single_agent(query: str) -> dict:
-    """Run one query through AgentEngine (single-agent baseline)."""
+    """Run one query through AgentEngine (single-agent baseline).
+
+    Tokens come from the LLM-layer usage tracker, i.e. every model call the
+    agent made (reasoning steps and the final answer, with retrieved context),
+    measured the same way as the squad. AgentEngine's own input/output counts
+    only cover the query and the final answer, so they are not used here.
+    """
     from app.models.schemas import AgentRunRequest
     from app.services.agent_engine import AgentEngine
 
@@ -43,23 +50,17 @@ async def run_single_agent(query: str) -> dict:
     request = AgentRunRequest(query=query, max_steps=5)
 
     answer = ""
-    total_latency_ms = 0
-    input_tokens = 0
-    output_tokens = 0
-
-    async for event in engine.run_stream(request):
-        if event.get("type") == "trace.completed":
-            data = event.get("data", {})
-            answer = data.get("answer", "")
-            total_latency_ms = data.get("totalLatencyMs", 0)
-            input_tokens = data.get("inputTokens", 0)
-            output_tokens = data.get("outputTokens", 0)
+    with track_usage() as usage:
+        async for event in engine.run_stream(request):
+            if event.get("type") == "trace.completed":
+                answer = event.get("data", {}).get("answer", "")
 
     return {
         "answer": answer,
-        "total_latency_ms": total_latency_ms,
-        "input_tokens": input_tokens,
-        "output_tokens": output_tokens,
+        "input_tokens": usage.input_tokens,
+        "output_tokens": usage.output_tokens,
+        "tokens_estimated": usage.any_estimated or not usage.calls,
+        "llm_calls": len(usage.calls),
     }
 
 
@@ -71,6 +72,12 @@ async def run_squad(query: str, case_id: str, telemetry: TelemetryCollector) -> 
 
 def _cost(input_tokens: int, output_tokens: int) -> float:
     return (input_tokens + output_tokens) * settings.COST_PER_TOKEN
+
+
+def _errored(answer: str, error: str | None) -> bool:
+    """True when the arm failed to produce an answer at all (provider/LLM
+    error), as opposed to producing a wrong answer."""
+    return bool(error) or (answer or "").startswith("No answer was generated")
 
 
 async def run_benchmark() -> dict:
@@ -87,23 +94,26 @@ async def run_benchmark() -> dict:
         # --- Arm A: single agent ---
         tc_single = TelemetryCollector(arm="single_agent", case_id=case_id)
         result_a = await run_single_agent(question)
-        passed_a = _passed(result_a["answer"], keywords)
+        passed_a = passed_strict(result_a["answer"], keywords)
         tc_single.input_tokens = result_a["input_tokens"]
         tc_single.output_tokens = result_a["output_tokens"]
         tc_single.total_tokens = tc_single.input_tokens + tc_single.output_tokens
         tc_single.cost = _cost(tc_single.input_tokens, tc_single.output_tokens)
-        tc_single.finish(passed=passed_a, answer=result_a["answer"])
+        tc_single.tokens_estimated = result_a["tokens_estimated"]
+        err_a = "llm_error" if _errored(result_a["answer"], None) else None
+        tc_single.finish(passed=passed_a, answer=result_a["answer"], error=err_a)
         single.add(tc_single)
-        print(f"  single: pass={passed_a} latency={result_a['total_latency_ms']}ms "
-              f"tokens={tc_single.total_tokens}")
+        print(f"  single: pass={passed_a} latency={tc_single.latency_ms}ms "
+              f"tokens={tc_single.total_tokens} llm_calls={result_a['llm_calls']}")
 
         # --- Arm B: squad ---
         tc_squad = TelemetryCollector(arm="squad", case_id=case_id)
         result_b = await run_squad(question, case_id, tc_squad)
-        passed_b = _passed(result_b["answer"], keywords)
-        tc_squad.finish(passed=passed_b, answer=result_b["answer"], error=result_b.get("error"))
+        passed_b = passed_strict(result_b["answer"], keywords)
+        err_b = result_b.get("error") or ("llm_error" if _errored(result_b["answer"], None) else None)
+        tc_squad.finish(passed=passed_b, answer=result_b["answer"], error=err_b)
         squad.add(tc_squad)
-        print(f"  squad:  pass={passed_b} latency={result_b['total_latency_ms']}ms "
+        print(f"  squad:  pass={passed_b} latency={tc_squad.latency_ms}ms "
               f"tokens={tc_squad.total_tokens} hops={len(tc_squad.handoffs)}")
 
     # Write artifacts
@@ -114,7 +124,8 @@ async def run_benchmark() -> dict:
     write_handoffs_jsonl(squad.cases)
 
     # race_table.md
-    _write_race_table(single_summary, squad_summary, cases)
+    provider, model = await _provider_and_model()
+    _write_race_table(single_summary, squad_summary, cases, provider, model)
 
     # verdict.md (from actual results)
     generate_verdict(single_summary, squad_summary)
@@ -125,22 +136,42 @@ async def run_benchmark() -> dict:
     # CSV details
     _write_csv(single.cases, squad.cases)
 
+    # Full per-case results incl. answers, so borderline keyword scores can be reviewed.
+    (RESULTS_DIR / "benchmark_results.json").write_text(
+        json.dumps({"single_agent": single_summary, "squad": squad_summary,
+                    "provider": provider, "model": model}, indent=2, default=str),
+        encoding="utf-8",
+    )
+
     return {
         "single_agent": single_summary,
         "squad": squad_summary,
     }
 
 
-def _write_race_table(single: dict, squad: dict, cases: list[dict]) -> None:
+async def _provider_and_model() -> tuple[str, str]:
+    from app.services.llm import resolve_provider_and_model
+
+    return await resolve_provider_and_model()
+
+
+def _write_race_table(single: dict, squad: dict, cases: list[dict], provider: str, model: str) -> None:
     lines = []
     lines.append("# Week 10: Single-Agent vs Multi-Agent Squad Comparison")
     lines.append("")
     lines.append(f"Dataset: `evals/developer_docs_cases.json` (10 GitHub API version-specific cases)")
     lines.append(f"Case IDs: {', '.join(c['id'] for c in cases)}")
-    lines.append(f"Evaluator: keyword-presence (all expected keywords must appear in answer)")
-    lines.append(f"Model: `{settings.LLM_PROVIDER}` / `{settings.GROQ_MODEL if settings.LLM_PROVIDER=='groq' else settings.GEMINI_MODEL if settings.LLM_PROVIDER=='gemini' else settings.OPENROUTER_MODEL}`")
-    lines.append(f"Cost per token: `{settings.COST_PER_TOKEN}` (estimated, not provider-reported)")
-    lines.append(f"Token method: estimated (word-count heuristic); not provider-reported usage")
+    lines.append("Evaluator: strict keyword scorer (`app/services/evaluation/scoring.py`): whole-word match, all expected keywords required, refusals never pass")
+    lines.append(f"Model: `{provider}` / `{model}` (same model and evaluator for both arms)")
+    lines.append(f"Retrieval strategy: `{settings.DEFAULT_STRATEGY}` (same for both arms)")
+    lines.append(f"Cost per token: `{settings.COST_PER_TOKEN}` (flat configured rate, not provider billing)")
+    lines.append(
+        "Token method: single agent = "
+        + ("estimated" if single["tokens_estimated"] else "provider-reported")
+        + ", squad = "
+        + ("estimated" if squad["tokens_estimated"] else "provider-reported")
+        + " (both measured at the LLM layer, every model call counted once)"
+    )
     lines.append("")
     lines.append("## Summary")
     lines.append("")
@@ -156,46 +187,72 @@ def _write_race_table(single: dict, squad: dict, cases: list[dict]) -> None:
     lines.append(f"| Avg cost/question | ${single['cost_per_question']:.6f} | ${squad['cost_per_question']:.6f} |")
 
     # Context re-send multiplier
+    lines.append("")
+    lines.append("## Context Re-Send Multiplier")
+    lines.append("")
     if single["total_tokens"] > 0:
         multiplier = round(squad["total_tokens"] / single["total_tokens"], 1)
+        lines.append(
+            f"**{multiplier}** = squad total tokens / single-agent total tokens "
+            f"= {squad['total_tokens']} / {single['total_tokens']} (same 10 cases)"
+        )
     else:
-        multiplier = None
-        mult_str = "unavailable"
-    lines.append("")
-    lines.append(f"| Context Re-Send Multiplier | {multiplier if multiplier is not None else 'unavailable'} |")
-    if multiplier is not None:
-        lines.append(f"| Notes | Multi-Agent Total Tokens / Single-Agent Total Tokens = {squad['total_tokens']} / {single['total_tokens']} |")
+        lines.append("unavailable (single-agent total tokens is zero)")
+
+    def _status(row: dict | None) -> str:
+        if not row:
+            return "-"
+        if row.get("error"):
+            return "ERR"  # arm produced no answer (provider/LLM error), not a wrong answer
+        return "Y" if row["passed"] else "N"
 
     lines.append("")
     lines.append("## Per-Case Results")
     lines.append("")
-    lines.append("| Case | Single Pass | Single Latency (ms) | Single Tokens | Squad Pass | Squad Latency (ms) | Squad Tokens | Squad Hops |")
-    lines.append("|------|-------------|---------------------|---------------|------------|--------------------|--------------|------------|")
+    lines.append("Result: Y = pass, N = wrong/refused answer, ERR = no answer produced (provider/LLM error).")
+    lines.append("")
+    lines.append("| Case | Single | Single ms | Single tokens | Squad | Squad ms | Squad tokens | Squad hops |")
+    lines.append("|------|--------|-----------|---------------|-------|----------|--------------|------------|")
     for c in cases:
         cid = c["id"]
         s_row = next((x for x in single["cases"] if x["case_id"] == cid), None)
         b_row = next((x for x in squad["cases"] if x["case_id"] == cid), None)
-        s_pass = "Y" if s_row and s_row["passed"] else "N"
-        b_pass = "Y" if b_row and b_row["passed"] else "N"
-        s_lat = s_row["latency_ms"] if s_row else 0
-        b_lat = b_row["latency_ms"] if b_row else 0
-        s_tok = s_row["total_tokens"] if s_row else 0
-        b_tok = b_row["total_tokens"] if b_row else 0
-        b_hops = len(b_row["handoffs"]) if b_row else 0
-        lines.append(f"| {cid} | {s_pass} | {s_lat} | {s_tok} | {b_pass} | {b_lat} | {b_tok} | {b_hops} |")
+        lines.append(
+            f"| {cid} | {_status(s_row)} | {s_row['latency_ms'] if s_row else 0} | {s_row['total_tokens'] if s_row else 0} "
+            f"| {_status(b_row)} | {b_row['latency_ms'] if b_row else 0} | {b_row['total_tokens'] if b_row else 0} "
+            f"| {len(b_row['handoffs']) if b_row else 0} |"
+        )
+    n_err_s = sum(1 for x in single["cases"] if x.get("error"))
+    n_err_b = sum(1 for x in squad["cases"] if x.get("error"))
+    lines.append("")
+    lines.append(f"Errored cases (no answer produced): single {n_err_s}, squad {n_err_b}. These are provider/LLM failures, not wrong answers.")
+
+    known = Path(__file__).resolve().parents[3] / "evals" / "known_scoring_issues.json"
+    if known.exists():
+        issues = {k: v for k, v in json.loads(known.read_text()).items() if not k.startswith("_")}
+        hit = [cid for cid in issues if any(not r["passed"] for arm in (single, squad) for r in arm["cases"] if r["case_id"] == cid)]
+        if hit:
+            lines.append("")
+            lines.append("## Known scorer weaknesses (scores above are NOT adjusted)")
+            for cid in hit:
+                lines.append(f"- `{cid}`: keyword `{issues[cid]['keyword']}` is a {issues[cid]['issue']}. {issues[cid]['evidence']}")
 
     lines.append("")
     lines.append("## Methodology Notes")
-    lines.append("- Token counts are estimated via word-count heuristic (same as `rag_engine.estimate_tokens`), not provider-reported.")
-    lines.append("- Costs are estimates based on `settings.COST_PER_TOKEN`; actual provider pricing may differ.")
-    lines.append("- p50/p99 use nearest-rank percentile; p99 of 10 samples is the max value.")
-    lines.append("- Squad token counts include orchestrator + both specialist workers + final answer generation.")
-    lines.append("- All handoffs are logged in `artifacts/week10/handoffs.log` (JSON Lines).")
+    lines.append("- Tokens for both arms are measured at the LLM layer (`app/services/llm.py` usage tracker): every model call is counted once, with its full prompt (retrieved context included).")
+    lines.append("- A call's tokens are provider-reported when the stream carries a usage chunk; otherwise estimated by word count and flagged above.")
+    lines.append("- Squad totals include only the two orchestrator model calls (routing, final answer). Worker hops move retrieved text and make no model call, so their payload size is logged in `handoffs.log` (`model_call: false`) but not added to totals (it is already inside the final-answer prompt).")
+    lines.append("- Cost = total tokens x `settings.COST_PER_TOKEN` (one flat configured rate for input and output; not provider billing).")
+    lines.append("- Latency is wall-clock per question, measured identically for both arms. p50/p99 use nearest-rank percentile; with 10 samples p99 is the maximum, so it is a weak estimate.")
+    lines.append("- Scoring is a keyword check (see Evaluator). It cannot judge correctness beyond keyword presence; read the answers for borderline cases.")
+    lines.append("- All handoffs, including every retry attempt, are in `artifacts/week10/handoffs.log` (JSON Lines).")
 
-    # Largest handoff bottleneck
+    # Largest handoff bottleneck: among billable model-call hops (these are what
+    # the totals are made of), plus the largest worker payload for reference.
     all_handoffs = [h for c in squad["cases"] for h in c["handoffs"]]
-    if all_handoffs:
-        bottleneck = max(all_handoffs, key=lambda h: h["total_tokens"])
+    model_hops = [h for h in all_handoffs if h.get("model_call")]
+    if model_hops:
+        bottleneck = max(model_hops, key=lambda h: h["total_tokens"])
         squad_total = squad["total_tokens"]
         pct = round(bottleneck["total_tokens"] / squad_total * 100, 1) if squad_total > 0 else 0
         lines.append("")
@@ -203,10 +260,17 @@ def _write_race_table(single: dict, squad: dict, cases: list[dict]) -> None:
         lines.append(f"- Source: `{bottleneck['source_agent']}`")
         lines.append(f"- Destination: `{bottleneck['destination_agent']}`")
         lines.append(f"- Purpose: {bottleneck['delegation_purpose']}")
-        lines.append(f"- Tokens: {bottleneck['total_tokens']} ({'estimated' if bottleneck['tokens_estimated'] else 'measured'})")
+        lines.append(f"- Tokens: {bottleneck['total_tokens']} ({'estimated' if bottleneck['tokens_estimated'] else 'provider-reported'})")
         lines.append(f"- % of squad total tokens: {pct}%")
         lines.append(f"- Case: {bottleneck['case_id']}")
         lines.append(f"- Status: {bottleneck['status']}")
+        payload_hops = [h for h in all_handoffs if not h.get("model_call")]
+        if payload_hops:
+            big = max(payload_hops, key=lambda h: h["total_tokens"])
+            lines.append(
+                f"- Largest worker payload (not a model call, not in totals): `{big['destination_agent']}` "
+                f"{big['total_tokens']} tokens (estimated) in {big['case_id']}"
+            )
 
     (RESULTS_DIR / "race_table.md").write_text("\n".join(lines), encoding="utf-8")
 

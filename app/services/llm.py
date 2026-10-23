@@ -1,6 +1,9 @@
 import asyncio
+import contextvars
 import json
-from typing import AsyncGenerator, Optional
+import time
+from contextlib import contextmanager
+from typing import AsyncGenerator, Iterator, Optional
 
 import httpx
 
@@ -38,6 +41,69 @@ def _estimate_output_tokens(text: str) -> int:
     if not text:
         return 0
     return max(1, int(len(text.split()) / 0.75))
+
+
+class UsageTracker:
+    """Accumulates token usage for every LLM call made while it is active.
+
+    Used to measure an end-to-end request (single agent or multi-agent squad)
+    with one consistent method instead of each caller estimating on its own.
+    Each call is recorded once, at the point it completes. A call's counts are
+    provider-reported when the stream carried a usage chunk, otherwise
+    estimated from text length and flagged estimated=True.
+    """
+
+    def __init__(self) -> None:
+        self.calls: list[dict] = []
+
+    def record(self, input_tokens: int, output_tokens: int, estimated: bool) -> None:
+        self.calls.append({"input": input_tokens, "output": output_tokens, "estimated": estimated})
+
+    @property
+    def input_tokens(self) -> int:
+        return sum(c["input"] for c in self.calls)
+
+    @property
+    def output_tokens(self) -> int:
+        return sum(c["output"] for c in self.calls)
+
+    @property
+    def total_tokens(self) -> int:
+        return self.input_tokens + self.output_tokens
+
+    @property
+    def any_estimated(self) -> bool:
+        return any(c["estimated"] for c in self.calls)
+
+
+_usage_tracker: contextvars.ContextVar[Optional[UsageTracker]] = contextvars.ContextVar(
+    "llm_usage_tracker", default=None
+)
+
+
+@contextmanager
+def track_usage() -> Iterator[UsageTracker]:
+    tracker = UsageTracker()
+    token = _usage_tracker.set(tracker)
+    try:
+        yield tracker
+    finally:
+        _usage_tracker.reset(token)
+
+
+def _record_usage(system_prompt: str, user_prompt: str, output_text: str, reported: Optional[dict]) -> dict:
+    """Resolve a finished call's token counts, record them on the active
+    tracker (if any) and return them in the `done` chunk's `tokens` shape."""
+    if reported and reported.get("prompt_tokens") is not None and reported.get("completion_tokens") is not None:
+        inp, out, estimated = int(reported["prompt_tokens"]), int(reported["completion_tokens"]), False
+    else:
+        inp = _estimate_output_tokens((system_prompt or "") + " " + (user_prompt or ""))
+        out = _estimate_output_tokens(output_text)
+        estimated = True
+    tracker = _usage_tracker.get()
+    if tracker is not None:
+        tracker.record(inp, out, estimated)
+    return {"input": inp, "output": out, "total": inp + out, "estimated": estimated}
 
 
 async def _open_stream_with_retry(
@@ -115,7 +181,7 @@ async def is_llm_configured() -> bool:
     return bool(api_key)
 
 
-async def generate_completion_stream(
+async def _stream_completion(
     system_prompt: str,
     user_prompt: str,
     model: Optional[str] = None,
@@ -170,6 +236,7 @@ async def generate_completion_stream(
                     "top_p": top_p,
                     "max_tokens": max_tokens,
                     "stream": True,
+                    **({"stream_options": {"include_usage": True}} if settings.LLM_STREAM_USAGE else {}),
                 },
             )
             try:
@@ -183,6 +250,8 @@ async def generate_completion_stream(
 
                 buffer = ""
                 accumulated_content = ""
+                reported_usage: Optional[dict] = None
+                effective_system = system_prompt or DEFAULT_SYSTEM_PROMPT
 
                 async for chunk in response.aiter_text():
                     buffer += chunk
@@ -198,12 +267,14 @@ async def generate_completion_stream(
                         if payload == "[DONE]":
                             yield {
                                 "type": "done",
-                                "tokens": {"input": None, "output": _estimate_output_tokens(accumulated_content), "total": None},
+                                "tokens": _record_usage(effective_system, user_prompt, accumulated_content, reported_usage),
                             }
                             return
 
                         try:
                             parsed = json.loads(payload)
+                            if isinstance(parsed.get("usage"), dict):
+                                reported_usage = parsed["usage"]
                             choices = parsed.get("choices", [])
                             if not choices:
                                 continue
@@ -230,7 +301,7 @@ async def generate_completion_stream(
 
                 yield {
                     "type": "done",
-                    "tokens": {"input": None, "output": _estimate_output_tokens(accumulated_content), "total": None},
+                    "tokens": _record_usage(effective_system, user_prompt, accumulated_content, reported_usage),
                 }
             finally:
                 await cm.__aexit__(None, None, None)
@@ -239,3 +310,59 @@ async def generate_completion_stream(
             "type": "error",
             "error": f"{provider} streaming request failed: {e}",
         }
+
+
+async def resolve_provider_and_model(model: Optional[str] = None) -> tuple[str, str]:
+    """Provider and model that generate_completion_stream will actually use
+    (persisted app settings take precedence over .env defaults)."""
+    from app.services.storage import get_settings
+
+    persisted = await get_settings()
+    provider, _ = get_persisted_provider_and_keys(persisted)
+    if model:
+        return provider, model
+    resolved = {
+        "gemini": persisted.get("geminiModel") or settings.GEMINI_MODEL,
+        "openrouter": persisted.get("openrouterModel") or settings.OPENROUTER_MODEL,
+        "nvidia": persisted.get("nvidiaModel") or settings.NVIDIA_MODEL,
+    }.get(provider) or persisted.get("groqModel") or settings.GROQ_MODEL
+    return provider, resolved
+
+
+async def generate_completion_stream(
+    system_prompt: str,
+    user_prompt: str,
+    model: Optional[str] = None,
+    temperature: float = 0.7,
+    max_tokens: int = 1024,
+    top_p: float = 1.0,
+) -> AsyncGenerator[dict, None]:
+    """Stream a completion, recording one `llm.generate` span (provider, model,
+    tokens, latency, outcome) on the active trace if there is one. The chunks
+    are passed through unchanged."""
+    from app.services.observability import get_active_trace, record_span
+
+    traced = get_active_trace() is not None
+    t0 = time.time()
+    async for chunk in _stream_completion(system_prompt, user_prompt, model, temperature, max_tokens, top_p):
+        if traced and chunk["type"] in ("done", "error"):
+            try:
+                provider, resolved_model = await resolve_provider_and_model(model)
+                tokens = chunk.get("tokens") or {}
+                record_span(
+                    "llm.generate",
+                    int((time.time() - t0) * 1000),
+                    status="success" if chunk["type"] == "done" else "error",
+                    input_tokens=int(tokens.get("input") or 0),
+                    output_tokens=int(tokens.get("output") or 0),
+                    error=chunk.get("error"),
+                    metadata={
+                        "provider": provider,
+                        "model": resolved_model,
+                        "tokens_estimated": bool(tokens.get("estimated", False)),
+                        "max_tokens": max_tokens,
+                    },
+                )
+            except Exception as e:  # tracing must never break generation
+                logger.debug(f"llm span not recorded: {e}")
+        yield chunk

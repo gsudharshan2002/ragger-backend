@@ -24,6 +24,42 @@ uv run uvicorn app.main:app --reload --port 8000
 
 On Windows PowerShell, use `Copy-Item .env.example .env` instead of `cp`.
 
+### Knowledge base for the developer-docs evaluation
+
+The Week 6 cases in `evals/developer_docs_cases.json` expect `current-version.md`, `old-version.md`
+and the Apple Combine PDF in the knowledge base. Load them from `uploads/` (idempotent; add `--dry-run` to preview):
+
+```bash
+uv run python scripts/seed_github_kb.py
+```
+
+### Check which retrieval features work
+
+Vector search and the local reranker need the optional `sentence-transformers` (torch) stack. If it is not
+installable on your Python version, retrieval falls back to BM25 and logs a warning at startup. Check with:
+
+```bash
+curl localhost:8000/api/v1/health/capabilities
+```
+
+### Week 10 benchmark (single agent vs squad)
+
+```bash
+DEFAULT_STRATEGY=bm25 uv run python scripts/run_week10_experiment.py   # writes artifacts/week10/
+```
+
+### Traces, search and cost (Week 11)
+
+Every agent and squad request is stored as one trace (spans for model calls, tools, retrieval and handoffs; provider-reported
+tokens; prompt version; redacted inputs) in `app/data/traces.jsonl`.
+
+```bash
+uv run python scripts/trace_search.py --query-contains assignee --answer-contains "could not find"   # find a bad answer
+uv run python scripts/trace_export.py <trace_id> out.json                                           # complete trace
+uv run python scripts/cost_by_stage.py --trace-id <trace_id>                                        # retrieval / generation / tools cost
+DEFAULT_STRATEGY=bm25 uv run python scripts/week11_live_regression.py 5                             # live prompt v1 vs v2 (slow, uses the LLM)
+```
+
 Run the test suite and quality checks with:
 
 ```bash

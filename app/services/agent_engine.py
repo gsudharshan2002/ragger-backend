@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import Any, AsyncGenerator, Optional
 from uuid import uuid4
 
+from app.core.config import settings
 from app.core.logging_config import get_logger
 from app.models.schemas import (
     AgentAction,
@@ -17,7 +18,15 @@ from app.models.schemas import (
     RagStrategy,
 )
 from app.services.agent_tools import ApiVersion, check_deprecation
-from app.services.llm import generate_completion_stream, is_llm_configured
+from app.services.llm import generate_completion_stream, is_llm_configured, resolve_provider_and_model
+from app.services.observability import (
+    begin_trace,
+    get_active_trace,
+    record_span,
+    redact,
+    set_active_trace,
+    start_span,
+)
 from app.services.rag_engine import RagEngine, build_prompt, estimate_tokens
 from app.services.mcp_client import MCPManager
 from mcp.types import Tool as MCPTool
@@ -197,7 +206,18 @@ class AgentEngine:
 
     async def run_stream(self, request: AgentRunRequest) -> AsyncGenerator[dict, None]:
         """Run the ReAct loop, yielding SSE-shaped progress events for each
-        step and a final trace.completed event carrying the AgentRunResponse."""
+        step and a final trace.completed event carrying the AgentRunResponse.
+
+        The run is one trace: every model call, tool execution and retrieval
+        records a span under it (see observability). The active trace is always
+        cleared afterwards so it cannot leak into the next request."""
+        try:
+            async for event in self._run_stream_inner(request):
+                yield event
+        finally:
+            set_active_trace(None)
+
+    async def _run_stream_inner(self, request: AgentRunRequest) -> AsyncGenerator[dict, None]:
         trace_id = str(uuid4())
         start_time = time.time()
         query = request.query
@@ -219,6 +239,21 @@ class AgentEngine:
             yield emit("trace.failed", {"error": error_msg})
             yield {"type": "error", "error": error_msg}
             return
+
+        # One trace for the whole run; its id is the response's trace_id.
+        provider, model_id = await resolve_provider_and_model()
+        trace_ctx = begin_trace(
+            request_id=trace_id,
+            prompt_version=settings.PROMPT_VERSION,
+            model_provider=provider,
+            model_id=model_id,
+            endpoint="/api/v1/agent/run",
+            mode="agent-mcp" if request.mcp else "agent",
+            sanitized_input=str(redact(query)),
+        )
+        trace_ctx.trace_id = trace_id
+        root_span = start_span(trace_id, "agent.run", metadata={"max_steps": max_steps, "strategy": strategy.value if strategy else None})
+        trace_ctx.root_span_id = root_span.span_id
 
         # Initialize MCP manager if MCP mode is requested
         mcp_manager = None
@@ -279,6 +314,7 @@ class AgentEngine:
             )
 
             step_start = time.time()
+            chunks_before = len(retrieved_chunks)
 
             if action.tool == AgentTool.RETRIEVE:
                 search_query = action.inputs.get("query") or query
@@ -421,6 +457,20 @@ class AgentEngine:
                     latency_ms=int((time.time() - step_start) * 1000),
                 )
 
+            # Tool span. The answer tool's model call already has its own
+            # llm.generate span (with tokens), so this span carries no tokens:
+            # each billable operation is recorded once.
+            record_span(
+                f"tool.{action.tool.value}",
+                observation.latency_ms,
+                status="error" if observation.error else "success",
+                tool_name=action.tool.value,
+                tool_outcome="error" if observation.error else "ok",
+                context_ids=[getattr(c, "id", "") for c in retrieved_chunks[chunks_before:]],
+                error=observation.error,
+                metadata={"step_number": step_number, "inputs": redact(action.inputs)},
+            )
+
             yield emit(
                 "agent.action.done",
                 {
@@ -503,12 +553,20 @@ class AgentEngine:
 
         total_latency_ms = int((time.time() - start_time) * 1000)
 
+        # Token totals are the sum of the run's model-call spans (provider-
+        # reported where available). Fall back to the old query/answer
+        # estimate only if no model call was recorded.
+        root_span.finish(status="success")
+        llm_spans = [sp for sp in trace_ctx.spans if sp.stage == "llm.generate"]
+        run_input_tokens = sum(sp.input_tokens for sp in llm_spans) or estimate_tokens(query)
+        run_output_tokens = sum(sp.output_tokens for sp in llm_spans) or estimate_tokens(final_answer)
+
         response = AgentRunResponse(
             answer=final_answer,
             steps=steps,
             total_latency_ms=total_latency_ms,
-            input_tokens=estimate_tokens(query),
-            output_tokens=estimate_tokens(final_answer),
+            input_tokens=run_input_tokens,
+            output_tokens=run_output_tokens,
             trace_id=trace_id,
             sources=sources,
         )
@@ -520,9 +578,24 @@ class AgentEngine:
                 {
                     **response.model_dump(),
                     "kind": "agent",
-                    "query": query,
+                    "query": redact(query),
                     "strategy": strategy.value if strategy else None,
                     "knowledge_base_id": knowledge_base_id,
+                    # Fields the trace search (storage.search_traces) filters on.
+                    "id": trace_id,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "status": "completed" if not final_answer.startswith("No answer was generated") else "error",
+                    "error": final_answer if final_answer.startswith("No answer was generated") else None,
+                    "llm": {"provider": trace_ctx.model_provider, "model": trace_ctx.model_id},
+                    "cost_usd": round(trace_ctx.total_cost_usd, 6),
+                    "request_id": trace_ctx.request_id,
+                    "prompt_version": trace_ctx.prompt_version,
+                    "model_provider": trace_ctx.model_provider,
+                    "model_id": trace_ctx.model_id,
+                    "endpoint": trace_ctx.endpoint,
+                    "mode": trace_ctx.mode,
+                    "spans": [sp.to_dict() for sp in trace_ctx.spans],
+                    "total_cost_usd": round(trace_ctx.total_cost_usd, 6),
                 }
             )
         except Exception as e:

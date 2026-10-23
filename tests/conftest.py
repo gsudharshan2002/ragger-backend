@@ -40,5 +40,28 @@ def client():
     import app.api.v1.benchmark as benchmark
     benchmark._benchmark_runs = {}
 
-    with TestClient(app) as c:
-        yield c
+    # The MCP StreamableHTTP session managers are process-global and may only
+    # run() once; the app lifespan would start them again for every TestClient.
+    # Production starts the lifespan once, so stub run() for the test client only.
+    import contextlib
+
+    from app.main import mcp_server, package_registry_server
+
+    @contextlib.asynccontextmanager
+    async def _no_op_run():
+        yield
+
+    # Embedding generation needs the optional sentence-transformers/torch stack.
+    # Use deterministic stand-in vectors so tests behave the same on any machine.
+    async def _fake_embeddings(texts, *args, **kwargs):
+        return [[float(len(t) % 7 + 1), 1.0, 0.5] for t in texts]
+
+    mp = pytest.MonkeyPatch()
+    mp.setattr("app.services.document_processor.get_embeddings_for_texts", _fake_embeddings)
+    mp.setattr(mcp_server.session_manager, "run", _no_op_run)
+    mp.setattr(package_registry_server.session_manager, "run", _no_op_run)
+    try:
+        with TestClient(app) as c:
+            yield c
+    finally:
+        mp.undo()

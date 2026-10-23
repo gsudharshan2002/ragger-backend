@@ -27,6 +27,16 @@ def upload_text(client, filename="sample.txt", kb_id=None):
 # ============================== Health ==============================
 
 
+def test_health_capabilities_reports_state(client):
+    r = client.get("/api/v1/health/capabilities")
+    assert r.status_code == 200
+    data = r.json()["data"]
+    for key in ("vector_search_available", "reranker_available", "degraded", "default_strategy"):
+        assert key in data
+    # Whenever vector search is off, the reason must be reported.
+    assert data["vector_search_available"] or any("vector search is off" in d for d in data["degraded"])
+
+
 def test_root_health(client):
     r = client.get("/health")
     assert r.status_code == 200
@@ -68,7 +78,9 @@ def test_upload_unsupported_type_returns_400(client):
         files={"file": ("evil.exe", b"MZ....", "application/octet-stream")},
     )
     assert r.status_code == 400
-    assert "Unsupported" in r.json()["detail"]
+    # The app wraps errors in the ApiResponse envelope (see main.http_exception_handler).
+    assert r.json()["success"] is False
+    assert "Unsupported" in r.json()["error"]["message"]
 
 
 def test_list_documents_and_get_one(client):
@@ -271,13 +283,8 @@ def test_benchmark_run_flow(client):
     assert result["datasetId"] == ds["id"]
     assert result["strategy"] == "bm25"
 
-    # `/benchmark/runs` is a separate in-memory store driven by `/benchmark/start`.
-    started = client.post(
-        "/api/v1/benchmark/start",
-        json={"config": {"strategy": "bm25", "datasetId": ds["id"], "datasetVersion": "v1"}},
-    )
-    assert started.status_code == 200, started.text
-    run_id = started.json()["data"]["id"]
+    # Runs are persisted by `/benchmark/run`; list, fetch and delete operate on that store.
+    run_id = result["id"]
 
     runs = client.get("/api/v1/benchmark/runs").json()["data"]
     assert any(r["id"] == run_id for r in runs)

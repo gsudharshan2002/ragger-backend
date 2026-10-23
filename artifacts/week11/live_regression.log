@@ -1,0 +1,14 @@
+v1_baseline #1: correct=True trace=902e6884-295f-4a0f-83ab-033467b0df40
+v1_baseline #2: correct=True trace=8012788c-ffa7-4ab5-875c-7f166871915e
+v1_baseline #3: correct=False trace=c25a04e0-c4c1-49f0-9e57-37f3e54f3722
+v1_baseline #4: correct=True trace=62cf44b6-5e9a-4670-9e30-3a0cedc5e22d
+v1_baseline #5: correct=True trace=fdfe2356-c46c-497b-80e5-067f6e60a173
+v2_fixed #1: correct=True trace=f124202f-dcc0-4b5d-a8ad-7a3832a3814b
+v2_fixed #2: correct=False trace=e3892bc8-774d-410a-bdb0-32acfd6790dd
+v2_fixed #3: correct=False trace=76907b32-16d0-4326-bab9-c291591f6623
+v2_fixed #4: correct=True trace=abb33bea-261f-4786-8ada-e738f245a3e8
+v2_fixed #5: correct=True trace=bff83e73-047c-4a37-bc21-b522648f2692
+v1_baseline: 4/5 correct, 0 recommended singular `assignee`
+v2_fixed: 3/5 correct, 0 recommended singular `assignee`
+wrote /Users/sudharshan.g/Documents/rag-app/ragger-backend/artifacts/week11/live_regression.json
+EXIT 0

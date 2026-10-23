@@ -563,7 +563,10 @@ def _matches_filter(trace: dict, filters: dict) -> bool:
     chunk_id = filters.get("chunk_id")
     if chunk_id:
         sources = trace.get("sources") or []
-        if not any(s.get("chunk_id") == chunk_id for s in sources):
+        in_sources = any(s.get("chunk_id") == chunk_id for s in sources)
+        # Also match chunk ids recorded on spans (agent/tool/retrieval spans).
+        in_spans = any(str(chunk_id) in (sp.get("context_ids") or []) for sp in trace.get("spans") or [])
+        if not (in_sources or in_spans):
             return False
 
     # Error status: true => trace has an error, false => no error.
@@ -574,6 +577,15 @@ def _matches_filter(trace: dict, filters: dict) -> bool:
     elif error_status is False:
         if trace.get("error"):
             return False
+
+    # Free-text filters (case-insensitive substring) on the question and the answer,
+    # so a bad answer can be found by what it said, not only by ids.
+    qc = filters.get("query_contains")
+    if qc and qc.lower() not in str(trace.get("query") or "").lower():
+        return False
+    ac = filters.get("answer_contains")
+    if ac and ac.lower() not in str(trace.get("answer") or "").lower():
+        return False
 
     min_latency = filters.get("min_latency_ms")
     if min_latency is not None and (trace.get("total_latency_ms") or 0) < min_latency:
@@ -599,6 +611,7 @@ async def search_traces(filters: dict, limit: int = 100) -> list[dict]:
     Filters (all optional):
       trace_id, request_id, status, prompt_version, model, mode,
       chunk_id, error (bool), min_latency_ms, min_cost_usd,
+      query_contains, answer_contains (case-insensitive substrings),
       started_after, started_before (ISO-8601)
     Returns matching traces, newest first, up to `limit`.
     """

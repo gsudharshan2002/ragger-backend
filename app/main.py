@@ -28,6 +28,10 @@ async def lifespan(app: FastAPI):
 
         # Startup
         logging.info(f"Starting {settings.APP_NAME} v1.0")
+        from app.core.capabilities import detect_capabilities
+
+        for issue in detect_capabilities()["degraded"]:
+            logging.warning(f"Degraded retrieval: {issue}")
         yield
         # Shutdown
         logging.info(f"Shutting down {settings.APP_NAME}")
